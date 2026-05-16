@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+// ── Variables ──────────────────────────────────────────────────────────────
+
+:root {
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans:  'DM Sans', system-ui, sans-serif;
+
+  --color-primary:      #0F6E56;
+  --color-primary-mid:  #1D9E75;
+  --color-primary-light:#5DCAA5;
+  --color-primary-pale: #E1F5EE;
+  --color-primary-dark: #085041;
+  --color-primary-deep: #04342C;
+
+  --color-amber:        #EF9F27;
+  --color-amber-pale:   #FAEEDA;
+  --color-amber-dark:   #633806;
+
+  --color-coral:        #D85A30;
+  --color-coral-pale:   #FAECE7;
+  --color-coral-dark:   #4A1B0C;
+
+  --color-red:          #E24B4A;
+  --color-red-pale:     #FCEBEB;
+  --color-red-dark:     #501313;
+
+  --color-ink:          #1a1a18;
+  --color-ink-secondary:#5a5a55;
+  --color-ink-muted:    #9a9a94;
+
+  --color-surface:      #ffffff;
+  --color-surface-soft: #f8f7f4;
+  --color-border:       rgba(0,0,0,0.08);
+  --color-border-mid:   rgba(0,0,0,0.12);
+
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin:     0;
+  padding:    0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family:      var(--font-sans);
+  background-color: var(--color-surface-soft);
+  color:            var(--color-ink);
+  line-height:      1.6;
+  min-height:       100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+textarea, input {
+  font-family: var(--font-sans);
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────
+
+.sr-only {
+  position:  absolute;
+  width:     1px;
+  height:    1px;
+  padding:   0;
+  margin:    -1px;
+  overflow:  hidden;
+  clip:      rect(0,0,0,0);
+  border:    0;
+}
+
+// ── Animations ────────────────────────────────────────────────────────────
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.45s ease both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
