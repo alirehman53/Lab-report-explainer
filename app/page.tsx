@@ -262,7 +262,7 @@ export default function HomePage() {
                 <button className={styles.secondaryBtn} onClick={() => { setImagePreview(null); setImageFile(null) }}>
                   Remove image
                 </button>
-                <span style={{ marginLeft: 12, color: 'var(--color-ink-muted)' }}>OCR extraction is not available yet.</span>
+                <span style={{ marginLeft: 12, color: 'var(--color-ink-muted)' }}>Preview ready — click "Explain my results →" to run server-side extraction.</span>
               </div>
             </div>
           )}

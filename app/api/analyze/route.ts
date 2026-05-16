@@ -34,38 +34,50 @@ export async function POST(req: NextRequest) {
 
       // If the upload is a PDF, try converting to PNG and OCR the first page
       if (file.type === 'application/pdf') {
-        // First try to extract embedded text using pdf.js (fast, no native deps)
         try {
           const pdfBuf = await file.arrayBuffer()
           const { extractPdfText } = await import('@/lib/pdfText')
           const extracted = await extractPdfText(pdfBuf)
+
           if (extracted && extracted.trim().length > 20) {
             const analysis = await analyzeReport(extracted, gender ?? 'unknown')
             return NextResponse.json(analysis)
           }
-        } catch (err) {
-          console.warn('[/api/analyze] pdf.js text extraction failed:', err)
-          // We do not perform server-side PDF->image conversion. Ask user to upload an image or paste text.
-          const analysis = {
-            results: [
-              {
-                kind: 'finding',
-                markerId: 'uploaded-pdf',
-                displayName: 'Uploaded PDF',
-                fullName: 'Uploaded PDF',
-                findingText: `Received ${file.name} (${file.type}). Could not extract selectable text from this PDF. Please upload an image (PNG/JPEG) of the report or paste the report text directly.`,
-                explanation: 'PDF text extraction failed; try uploading an image or pasting text.',
-                severity: 1,
-                category: 'other'
+
+          // No selectable text — try extracting embedded images from the PDF and OCR them
+          try {
+            const { extractImagesFromPdf } = await import('@/lib/pdfImages')
+            const images = await extractImagesFromPdf(pdfBuf)
+            if (images && images.length > 0) {
+              let allText = ''
+              for (const imgBytes of images) {
+                try {
+                  const text = await ocrBuffer(imgBytes.buffer as ArrayBuffer)
+                  if (text && text.trim().length > 0) allText += '\n\n' + text.trim()
+                } catch (e) {
+                  console.warn('[/api/analyze] OCR on embedded image failed:', e)
+                }
               }
-            ],
-            detectedPatterns: [],
-            doctorQuestions: [],
-            summary: { normal: 0, low: 0, high: 0, critical: 0 },
-            source: 'offline'
+
+              if (allText.trim().length > 20) {
+                const analysis = await analyzeReport(allText.trim(), gender ?? 'unknown')
+                return NextResponse.json(analysis)
+              }
+            }
+          } catch (e) {
+            console.warn('[/api/analyze] extracting embedded images failed:', e)
           }
 
-          return NextResponse.json(analysis)
+          // If we reach here, no selectable text and no embedded images produced usable OCR
+          return NextResponse.json({
+            error: 'This PDF appears to be a scanned image or contains embedded images we could not OCR. Please upload a PNG/JPEG photo of the report or paste the values as text. For automatic PDF→image conversion, enable Poppler (pdftoppm) on the server.',
+          }, { status: 422 })
+
+        } catch (err) {
+          console.error('[/api/analyze] PDF extraction failed:', err)
+          return NextResponse.json({
+            error: 'Could not read this PDF. Please upload a photo (PNG/JPEG) of the report or paste the values directly.',
+          }, { status: 422 })
         }
       }
 
