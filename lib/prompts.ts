@@ -4,11 +4,15 @@ export function buildLabPrompt(
   rawInput: string,
   offlineResult: ReportAnalysis
 ): string {
-  const abnormal = offlineResult.results.filter(r => r.status !== 'normal')
+  // Use only numeric results from the offline engine for the LLM prompt
+  const numericResults = offlineResult.results.filter(
+    (r: any) => (r as any).value !== undefined
+  ) as AnalyzedResult[]
+  const abnormal = numericResults.filter(r => r.status !== 'normal')
   const patterns = offlineResult.detectedPatterns
 
-  const markerSummary = offlineResult.results
-    .map(r => `- ${r.displayName}: ${r.value} ${r.unit} (${r.status}, normal: ${r.normalRange})`)
+  const markerSummary = numericResults
+    .map(r => `- ${r.displayName}: ${r.value} ${r.unit || ''} (${r.status || 'unknown'}, normal: ${r.normalRange || '—'})`)
     .join('\n')
 
   const patternSummary =

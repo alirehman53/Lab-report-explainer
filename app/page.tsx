@@ -9,6 +9,9 @@ type Gender = 'unknown' | 'female' | 'male'
 export default function HomePage() {
   const router  = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [rawText,   setRawText]   = useState('')
   const [gender,    setGender]    = useState<Gender>('unknown')
@@ -30,6 +33,14 @@ export default function HomePage() {
   async function handleFile(file: File) {
     if (!file) return
     try {
+      if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+        // image or PDF — set preview and keep for upload (PDF shows a preview link)
+        const url = URL.createObjectURL(file)
+        setImagePreview(url)
+        setImageFile(file)
+        return
+      }
+
       const text = await readFileAsText(file)
       setRawText(prev => (prev ? prev + '\n' + text : text))
     } catch {
@@ -65,18 +76,26 @@ export default function HomePage() {
   async function handleSubmit() {
     setError('')
     const text = rawText.trim()
-    if (!text) {
-      setError('Please enter your lab values or upload a file.')
+    if (!text && !imageFile) {
+      setError('Please enter your report text, upload a file, or upload an image.')
       return
     }
 
     setLoading(true)
     try {
-      const res = await fetch('/api/analyze', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ rawText: text, gender }),
-      })
+      let res: Response
+      if (imageFile && !text) {
+        const form = new FormData()
+        form.append('file', imageFile)
+        form.append('gender', gender)
+        res = await fetch('/api/analyze', { method: 'POST', body: form })
+      } else {
+        res = await fetch('/api/analyze', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ rawText: text, gender }),
+        })
+      }
 
       const data = await res.json()
 
@@ -85,9 +104,21 @@ export default function HomePage() {
         return
       }
 
+      // If server returns the PDF-extraction placeholder, show inline guidance instead of navigating
+      if (Array.isArray(data.results)) {
+        const pdfPlaceholder = data.results.find(
+          (r: any) => r && (r.markerId === 'uploaded-pdf' || r.markerId === 'uploaded-image') && typeof r.findingText === 'string' && r.findingText.includes('Could not extract selectable text')
+        )
+        if (pdfPlaceholder) {
+          setError(pdfPlaceholder.findingText)
+          setLoading(false)
+          return
+        }
+      }
+
       if (!data.results || data.results.length === 0) {
         setError(
-          'No recognizable lab values found. Try typing them like: "Hemoglobin 11.2, MCV 74, WBC 6.4"'
+          'No recognizable values found. Try typing examples or paste a short excerpt like: "Hemoglobin 11.2, MCV 74" or "Urinalysis: leukocyte esterase positive"'
         )
         return
       }
@@ -101,6 +132,27 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // ── Quick examples / helpers ───────────────────────────────────────────
+  const examples = [
+    'Hemoglobin 11.2, MCV 74, MCH 23, WBC 6.4',
+    'Urinalysis: leukocyte esterase positive, nitrites positive, RBC 5-10/HPF',
+    'Chest X-ray: cardiomegaly, mild pulmonary congestion',
+  ]
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) setRawText(prev => (prev ? prev + '\n' + text : text))
+    } catch {
+      setError('Could not access clipboard. Paste manually instead.')
+    }
+  }
+
+  function clearInput() {
+    setRawText('')
+    setError('')
   }
 
   return (
@@ -121,6 +173,16 @@ export default function HomePage() {
         </div>
         <div className={styles.navRight}>
           <span className={styles.navBadge}>Free · No signup</span>
+          <button
+            className={styles.navCta}
+            onClick={() => {
+              textareaRef.current?.focus();
+              textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }}
+          >
+            New analysis
+          </button>
+          <button className={styles.secondaryBtn} onClick={() => router.push('/about')}>About</button>
         </div>
       </nav>
 
@@ -128,13 +190,13 @@ export default function HomePage() {
 
         {/* Hero */}
         <div className={styles.hero}>
-          <p className={styles.eyebrow}>Lab Report Explainer</p>
+          <p className={styles.eyebrow}>Medical Report Explainer</p>
           <h1 className={styles.title}>
-            Your blood test,<br /><em>finally explained.</em>
+            Your medical reports,<br /><em>clearly explained.</em>
           </h1>
           <p className={styles.subtitle}>
-            Paste your lab values or upload a report. We explain every number in plain
-            language, flag what needs attention, and give you the right questions for your doctor.
+            Paste values or upload any medical test report (blood, urine, imaging, microbiology).
+            We explain findings in plain language, highlight important flags, and suggest questions for your clinician.
           </p>
         </div>
 
@@ -176,33 +238,73 @@ export default function HomePage() {
                 <line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
             </div>
-            <p className={styles.uploadTitle}>Drop your lab report here</p>
-            <p className={styles.uploadSub}>TXT or CSV file · values extracted automatically</p>
+            <p className={styles.uploadTitle}>Drop your medical report here</p>
+            <p className={styles.uploadSub}>TXT, CSV, or plain text · values and findings extracted automatically</p>
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,.csv,.text"
+              accept=".txt,.csv,.text,image/*,application/pdf"
               style={{ display: 'none' }}
               onChange={onFileChange}
             />
           </div>
 
+          {imagePreview && (
+            <div className={styles.imagePreviewWrap}>
+              {imageFile?.type === 'application/pdf' ? (
+                <div>
+                  <a href={imagePreview} target="_blank" rel="noreferrer" className={styles.pdfPreviewLink}>Preview PDF</a>
+                </div>
+              ) : (
+                <img src={imagePreview} alt="Preview" className={styles.imagePreview} />
+              )}
+              <div style={{ marginTop: 8 }}>
+                <button className={styles.secondaryBtn} onClick={() => { setImagePreview(null); setImageFile(null) }}>
+                  Remove image
+                </button>
+                <span style={{ marginLeft: 12, color: 'var(--color-ink-muted)' }}>OCR extraction is not available yet.</span>
+              </div>
+            </div>
+          )}
+
           <div className={styles.divider}>or type / paste your values</div>
 
           <textarea
             className={styles.textarea}
+            ref={textareaRef}
             value={rawText}
             onChange={e => setRawText(e.target.value)}
-            placeholder="e.g. Hemoglobin 11.2, MCV 74, MCH 23, WBC 6.4, Platelets 210, TSH 3.2, ALT 35 ..."
+            placeholder="e.g. Hemoglobin 11.2, MCV 74, Urinalysis: leukocyte esterase positive, Chest X-ray: cardiomegaly ..."
             rows={4}
           />
 
           {error && <div className={styles.errorBox}>{error}</div>}
+          <div className={styles.helperRow}>
+            <div className={styles.chips}>
+              {examples.map((ex, i) => (
+                <button
+                  key={i}
+                  className={styles.chip}
+                  onClick={() => setRawText(prev => (prev ? prev + '\n' + ex : ex))}
+                >
+                  {ex.split(',')[0]}
+                </button>
+              ))}
+            </div>
+            <div className={styles.helperBtns}>
+              <button className={styles.secondaryBtn} onClick={pasteFromClipboard}>
+                Paste from clipboard
+              </button>
+              <button className={styles.secondaryBtn} onClick={clearInput}>
+                Clear
+              </button>
+            </div>
+          </div>
 
           <button
             className={styles.submitBtn}
             onClick={handleSubmit}
-            disabled={loading || !rawText.trim()}
+            disabled={loading || (!rawText.trim() && !imageFile)}
           >
             {loading ? (
               <span className={styles.loadingText}>

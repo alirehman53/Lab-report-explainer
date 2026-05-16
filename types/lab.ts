@@ -1,6 +1,19 @@
 export type Gender = 'unknown' | 'female' | 'male'
 
-export type MarkerCategory = 'cbc' | 'liver' | 'thyroid' | 'kidney' | 'lipid' | 'diabetes' | 'iron' | 'electrolytes' | 'cardiac'
+export type MarkerCategory =
+  | 'cbc'
+  | 'liver'
+  | 'thyroid'
+  | 'kidney'
+  | 'lipid'
+  | 'diabetes'
+  | 'iron'
+  | 'electrolytes'
+  | 'cardiac'
+  | 'imaging'
+  | 'microbiology'
+  | 'urinalysis'
+  | 'other'
 
 export type RangeSet = {
   low: number
@@ -28,26 +41,42 @@ export interface LabMarker {
 export interface ParsedValue {
   markerId: string
   rawName: string         // what the user typed
-  value: number
+  // Numeric value when available (for lab markers)
+  value?: number
   unit?: string
+  // Free-text finding (for imaging, cultures, urinalysis notes)
+  text?: string
+  kind?: 'numeric' | 'finding'
 }
 
 export interface AnalyzedResult {
   markerId: string
   displayName: string
   fullName: string
-  value: number
-  unit: string
-  status: MarkerStatus
-  normalRange: string     // "12.0 – 16.0 g/dL"
-  percentPosition: number // for status bar positioning
+  // Numeric fields (present for lab markers)
+  value?: number
+  unit?: string
+  status?: MarkerStatus
+  normalRange?: string     // "12.0 – 16.0 g/dL"
+  percentPosition?: number // for status bar positioning
   explanation: string     // plain language
   severity: 1 | 2 | 3    // 1=mild, 2=moderate, 3=urgent
   category: MarkerCategory
 }
 
+export interface NonNumericResult {
+  kind: 'finding'
+  markerId: string
+  displayName: string
+  fullName: string
+  findingText: string
+  explanation: string
+  severity: 1 | 2 | 3
+  category: MarkerCategory
+}
+
 export interface ReportAnalysis {
-  results: AnalyzedResult[]
+  results: Array<AnalyzedResult | NonNumericResult>
   detectedPatterns: Pattern[]
   doctorQuestions: string[]
   summary: { normal: number; low: number; high: number; critical: number }

@@ -25,6 +25,10 @@ const CATEGORY_LABEL: Record<MarkerCategory, string> = {
   diabetes:     'Blood Sugar',
   electrolytes: 'Electrolytes',
   cardiac:      'Inflammation & Vitamins',
+  imaging:      'Imaging & Radiology',
+  microbiology: 'Microbiology & Cultures',
+  urinalysis:   'Urinalysis',
+  other:        'Other findings',
 }
 
 function cssStatus(status: MarkerStatus): string {
@@ -50,8 +54,8 @@ function groupByCategory(results: AnalyzedResult[]): Map<MarkerCategory, Analyze
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function StatusBar({ result }: { result: AnalyzedResult }) {
-  const cls = cssStatus(result.status)
-  const pct = `${Math.min(95, Math.max(5, result.percentPosition))}%`
+  const cls = cssStatus(result.status ?? 'normal')
+  const pct = `${Math.min(95, Math.max(5, result.percentPosition ?? 50))}%`
 
   return (
     <div className={styles.statusBarWrap}>
@@ -70,8 +74,8 @@ function StatusBar({ result }: { result: AnalyzedResult }) {
 }
 
 function ResultCard({ result }: { result: AnalyzedResult }) {
-  const cls    = cssStatus(result.status)
-  const crit   = isCritical(result.status)
+  const cls    = cssStatus(result.status ?? 'normal')
+  const crit   = isCritical(result.status ?? 'normal')
 
   return (
     <div className={`${styles.resultCard} ${crit ? styles.critical : ''}`}>
@@ -82,16 +86,16 @@ function ResultCard({ result }: { result: AnalyzedResult }) {
         </div>
         <div className={styles.valueBlock}>
           <div className={`${styles.value} ${styles[cls]}`}>
-            {result.value}
+            {result.value ?? '—'} {result.unit ?? ''}
           </div>
-          <div className={styles.normalRange}>Normal: {result.normalRange}</div>
+          <div className={styles.normalRange}>Normal: {result.normalRange ?? '—'}</div>
         </div>
       </div>
 
       <StatusBar result={result} />
 
       <span className={`${styles.statusBadge} ${styles[cls]}`}>
-        {STATUS_LABEL[result.status]}
+        {STATUS_LABEL[result.status ?? 'normal']}
       </span>
 
       <p className={styles.explanation}>{result.explanation}</p>
@@ -130,6 +134,9 @@ export default function ResultsPage() {
 
   const { results, detectedPatterns, doctorQuestions, summary, source } = analysis
 
+  const numericResults = results.filter(r => (r as any).value !== undefined) as AnalyzedResult[]
+  const findings = results.filter(r => (r as any).kind === 'finding') as any[]
+
   if (results.length === 0) {
     return (
       <div className={styles.page}>
@@ -150,7 +157,7 @@ export default function ResultsPage() {
     )
   }
 
-  const grouped = groupByCategory(results)
+  const grouped = groupByCategory(numericResults)
 
   return (
     <div className={styles.page}>
@@ -225,6 +232,20 @@ export default function ResultsPage() {
             </div>
           ))}
         </section>
+
+        {/* Non-numeric findings (imaging, cultures, urinalysis notes) */}
+        {findings.length > 0 && (
+          <section className={styles.findingsSection}>
+            <p className={styles.sectionLabel}>Other findings</p>
+            {findings.map((f, i) => (
+              <div key={i} className={styles.findingCard}>
+                <div className={styles.findingTitle}>{f.displayName}</div>
+                <div className={styles.findingText}>{f.findingText}</div>
+                <p className={styles.explanation}>{f.explanation}</p>
+              </div>
+            ))}
+          </section>
+        )}
 
         {/* Doctor questions */}
         {doctorQuestions.length > 0 && (

@@ -224,6 +224,64 @@
   }
 }
 
+// ── Helper chips and buttons
+.helperRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+.helperBtns { display: flex; gap: 8px; }
+
+.secondaryBtn {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-mid);
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface-soft));
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.secondaryBtn:hover { border-color: var(--color-primary-light); }
+
+// Nav CTA
+.navCta {
+  margin-left: 12px;
+  padding: 8px 12px;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.navCta:hover { background: var(--color-primary-dark); }
+
+.chip, .secondaryBtn, .navCta { transition: box-shadow 0.12s ease, transform 0.08s ease; }
+.chip:focus-visible, .secondaryBtn:focus-visible, .navCta:focus-visible { box-shadow: 0 0 0 4px var(--color-primary-pale); transform: translateY(-1px); }
+
 .textarea {
   width:         100%;
   padding:       14px 16px;
@@ -245,6 +303,32 @@
   &::placeholder {
     color: var(--color-ink-muted);
   }
+}
+
+.imagePreviewWrap {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.imagePreview {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  object-fit: contain;
+  background: var(--color-surface);
+}
+
+.pdfPreviewLink {
+  display: inline-block;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-primary);
+  text-decoration: none;
 }
 
 .submitBtn {
