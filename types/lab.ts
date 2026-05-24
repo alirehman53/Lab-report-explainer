@@ -1,86 +1,174 @@
-export type Gender = 'unknown' | 'female' | 'male'
+export type MarkerStatus =
+  | 'normal'
+  | 'low'
+  | 'high'
+  | 'critical-low'
+  | 'critical-high'
+
+export type QualitativeStatus =
+  | 'negative'       // non-reactive, not detected, absent
+  | 'positive'       // reactive, detected, present
+  | 'borderline'     // equivocal, indeterminate, weakly reactive
+  | 'trace'          // trace amounts detected
+  | 'info'           // informational only (blood group, Rh factor)
 
 export type MarkerCategory =
   | 'cbc'
+  | 'iron'
   | 'liver'
   | 'thyroid'
   | 'kidney'
   | 'lipid'
   | 'diabetes'
-  | 'iron'
   | 'electrolytes'
   | 'cardiac'
+  | 'hormones-female'
+  | 'hormones-male'
+  | 'hormones-adrenal'
+  | 'coagulation'
+  | 'tumor-markers'
+  | 'infectious-serology'
+  | 'autoimmune'
+  | 'urinalysis-numeric'
+  | 'urinalysis-qualitative'
+  | 'bone-minerals'
+  | 'vitamins-nutrition'
+  | 'allergy-immunology'
+  | 'drug-monitoring'
+  | 'cardiac-markers'
+  | 'stool'
+  | 'csf'
+  | 'derived'        // calculated markers (HOMA-IR, LDL-Friedewald, etc.)
   | 'imaging'
   | 'microbiology'
-  | 'urinalysis'
   | 'other'
 
-export type RangeSet = {
+export type ResultType = 'numeric' | 'qualitative' | 'titre' | 'ratio' | 'derived'
+
+export interface PatientContext {
+  gender: 'male' | 'female' | 'unknown'
+  age?: number      // in years; undefined = adult assumed
+}
+
+export interface RangeSet {
   low: number
   high: number
   criticalLow: number
   criticalHigh: number
 }
 
-export type MarkerStatus = 'normal' | 'low' | 'high' | 'critical-low' | 'critical-high'
-
-export interface LabMarker {
-  id: string              // e.g. "hemoglobin"
-  names: string[]         // ["Hemoglobin", "Hb", "HGB"] — for parsing
-  displayName: string
-  fullName: string
-  unit: string            // "g/dL"
+export interface AgeAdjustedRange {
+  ageMin: number     // inclusive
+  ageMax: number     // inclusive
   ranges: {
-    male?:   RangeSet
+    male?: RangeSet
     female?: RangeSet
     universal?: RangeSet
   }
+}
+
+export interface LabMarker {
+  id: string
+  names: string[]           // all aliases for parser matching
+  displayName: string
+  fullName: string
+  unit: string
   category: MarkerCategory
+  resultType: ResultType
+  ranges?: {
+    male?: RangeSet
+    female?: RangeSet
+    universal?: RangeSet
+  }
+  ageRanges?: AgeAdjustedRange[]   // overrides ranges when age is provided
+  derivedFrom?: string[]           // marker IDs needed to calculate this
+  formula?: string                 // human-readable formula for documentation
+}
+
+export interface QualitativeMarker {
+  id: string
+  names: string[]
+  displayName: string
+  fullName: string
+  category: MarkerCategory
+  resultType: 'qualitative' | 'titre'
+  // For qualitative: what strings map to which status
+  positiveAliases: string[]   // 'reactive', 'positive', 'detected', etc.
+  negativeAliases: string[]   // 'non-reactive', 'negative', 'not detected', etc.
+  borderlineAliases: string[] // 'equivocal', 'indeterminate', 'weakly reactive'
+  traceAliases: string[]      // 'trace', 'trace amounts'
+  // For titre: threshold above which result is clinically significant
+  titreThreshold?: number     // e.g. 1:80 for Widal = significant at 80
 }
 
 export interface ParsedValue {
   markerId: string
-  rawName: string         // what the user typed
-  // Numeric value when available (for lab markers)
-  value?: number
+  rawName: string
+  value: number
   unit?: string
-  // Free-text finding (for imaging, cultures, urinalysis notes)
-  text?: string
-  kind?: 'numeric' | 'finding'
+  resultType: 'numeric' | 'derived'
+}
+
+export interface ParsedQualitativeValue {
+  markerId: string
+  rawName: string
+  status: QualitativeStatus
+  rawValue: string          // exactly what was on the report
+  titreValue?: number       // for Widal/ASO titre results
+  resultType: 'qualitative' | 'titre'
 }
 
 export interface AnalyzedResult {
   markerId: string
   displayName: string
   fullName: string
-  // Numeric fields (present for lab markers)
-  value?: number
-  unit?: string
-  status?: MarkerStatus
-  normalRange?: string     // "12.0 – 16.0 g/dL"
-  percentPosition?: number // for status bar positioning
-  explanation: string     // plain language
-  severity: 1 | 2 | 3    // 1=mild, 2=moderate, 3=urgent
-  category: MarkerCategory
-}
-
-export interface NonNumericResult {
-  kind: 'finding'
-  markerId: string
-  displayName: string
-  fullName: string
-  findingText: string
+  value: number
+  unit: string
+  status: MarkerStatus
+  normalRange: string
+  percentPosition: number   // 0–100 for status bar UI
   explanation: string
   severity: 1 | 2 | 3
   category: MarkerCategory
+  resultType: 'numeric' | 'derived'
+  isDerived?: boolean
+}
+
+export interface AnalyzedQualitativeResult {
+  markerId: string
+  displayName: string
+  fullName: string
+  rawValue: string
+  status: QualitativeStatus
+  explanation: string
+  severity: 1 | 2 | 3
+  category: MarkerCategory
+  resultType: 'qualitative' | 'titre'
+  titreValue?: number
+  clinicalSignificance: 'none' | 'monitor' | 'action-required' | 'urgent'
 }
 
 export interface ReportAnalysis {
-  results: Array<AnalyzedResult | NonNumericResult>
+  // Numeric results (existing)
+  results: AnalyzedResult[]
+  // Qualitative results (new)
+  qualitativeResults: AnalyzedQualitativeResult[]
+  // Derived/calculated results
+  derivedResults: AnalyzedResult[]
+  // Pattern detection across ALL result types
   detectedPatterns: Pattern[]
   doctorQuestions: string[]
-  summary: { normal: number; low: number; high: number; critical: number }
-  source: 'ai' | 'offline' | 'hybrid'  // tells UI which engine was used
+  summary: {
+    normal: number
+    low: number
+    high: number
+    critical: number
+    positive: number      // qualitative positives
+    negative: number      // qualitative negatives
+    borderline: number    // qualitative borderlines
+  }
+  source: 'ai' | 'offline' | 'hybrid'
+  patientContext: PatientContext
 }
 
 export interface Pattern {

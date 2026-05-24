@@ -15,6 +15,7 @@ export default function HomePage() {
 
   const [rawText,   setRawText]   = useState('')
   const [gender,    setGender]    = useState<Gender>('unknown')
+  const [age,       setAge]       = useState('')
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState('')
   const [dragging,  setDragging]  = useState(false)
@@ -84,16 +85,19 @@ export default function HomePage() {
     setLoading(true)
     try {
       let res: Response
+      const ageNum = age ? parseInt(age, 10) : undefined
+      
       if (imageFile && !text) {
         const form = new FormData()
         form.append('file', imageFile)
         form.append('gender', gender)
+        if (ageNum) form.append('age', ageNum.toString())
         res = await fetch('/api/analyze', { method: 'POST', body: form })
       } else {
         res = await fetch('/api/analyze', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ rawText: text, gender }),
+          body:    JSON.stringify({ rawText: text, gender, age: ageNum }),
         })
       }
 
@@ -217,6 +221,23 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Age input (optional) */}
+          <div>
+            <label className={styles.genderLabel} htmlFor="age-input">
+              Your age (optional — improves accuracy for children and elderly)
+            </label>
+            <input
+              id="age-input"
+              type="number"
+              min="0"
+              max="120"
+              placeholder="e.g., 35"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              className={styles.ageInput}
+            />
           </div>
 
           {/* Drop zone */}

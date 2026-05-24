@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from '@/styles/results.module.scss'
-import { AnalyzedResult, MarkerCategory, MarkerStatus, ReportAnalysis } from '@/types/lab'
+import { 
+  AnalyzedResult, 
+  AnalyzedQualitativeResult,
+  MarkerCategory, 
+  MarkerStatus,
+  QualitativeStatus,
+  ReportAnalysis 
+} from '@/types/lab'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -103,6 +110,59 @@ function ResultCard({ result }: { result: AnalyzedResult }) {
   )
 }
 
+function QualitativeCard({ result }: { result: AnalyzedQualitativeResult }) {
+  const getStatusColor = (status: QualitativeStatus, significance?: string): string => {
+    if (status === 'negative') return 'negative'
+    if (status === 'positive') {
+      if (significance === 'urgent' || significance === 'action-required') return 'positive-urgent'
+      return 'positive'
+    }
+    if (status === 'borderline') return 'borderline'
+    if (status === 'trace') return 'trace'
+    return 'info'
+  }
+
+  const getStatusLabel = (status: QualitativeStatus): string => {
+    if (status === 'negative') return '− Negative'
+    if (status === 'positive') return '+ Positive'
+    if (status === 'borderline') return '~ Borderline'
+    if (status === 'trace') return '± Trace'
+    return 'ℹ Info'
+  }
+
+  const cls = getStatusColor(result.status, result.clinicalSignificance)
+  const isUrgent = result.clinicalSignificance === 'urgent' || result.clinicalSignificance === 'action-required'
+
+  return (
+    <div className={`${styles.qualCard} ${isUrgent ? styles.urgent : ''}`}>
+      <div className={styles.cardTop}>
+        <div className={styles.markerInfo}>
+          <div className={styles.markerName}>{result.displayName}</div>
+          <div className={styles.markerFullName}>{result.fullName}</div>
+        </div>
+        <div className={styles.valueBlock}>
+          <div className={`${styles.qualValue} ${styles[cls]}`}>
+            {result.rawValue}
+            {result.titreValue && <span className={styles.titre}> (titre: {result.titreValue})</span>}
+          </div>
+        </div>
+      </div>
+
+      <span className={`${styles.statusBadge} ${styles[cls]}`}>
+        {getStatusLabel(result.status)}
+      </span>
+
+      <p className={styles.explanation}>{result.explanation}</p>
+
+      {result.severity && result.severity !== 'none' && (
+        <div className={`${styles.severityNote} ${styles[result.severity]}`}>
+          Severity: {result.severity}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export default function ResultsPage() {
@@ -132,10 +192,11 @@ export default function ResultsPage() {
     )
   }
 
-  const { results, detectedPatterns, doctorQuestions, summary, source } = analysis
+  const { results, qualitativeResults, detectedPatterns, doctorQuestions, summary, source } = analysis
 
   const numericResults = results.filter(r => (r as any).value !== undefined) as AnalyzedResult[]
   const findings = results.filter(r => (r as any).kind === 'finding') as any[]
+  const qualResults = qualitativeResults || []
 
   if (results.length === 0) {
     return (
@@ -185,6 +246,11 @@ export default function ResultsPage() {
               ⚠ {summary.critical} critical
             </span>
           )}
+          {summary.positive > 0 && (
+            <span className={`${styles.summaryPill} ${styles.positive}`}>
+              + {summary.positive} positive
+            </span>
+          )}
           {summary.low > 0 && (
             <span className={`${styles.summaryPill} ${styles.low}`}>
               ↓ {summary.low} low
@@ -195,9 +261,19 @@ export default function ResultsPage() {
               ↑ {summary.high} high
             </span>
           )}
+          {summary.borderline > 0 && (
+            <span className={`${styles.summaryPill} ${styles.borderline}`}>
+              ~ {summary.borderline} borderline
+            </span>
+          )}
           {summary.normal > 0 && (
             <span className={`${styles.summaryPill} ${styles.normal}`}>
               ✓ {summary.normal} normal
+            </span>
+          )}
+          {summary.negative > 0 && (
+            <span className={`${styles.summaryPill} ${styles.negative}`}>
+              − {summary.negative} negative
             </span>
           )}
         </div>
@@ -220,6 +296,17 @@ export default function ResultsPage() {
           </section>
         )}
 
+        {/* Qualitative test results */}
+        {qualResults.length > 0 && (
+          <section className={styles.qualitativeSection}>
+            <p className={styles.sectionLabel}>Test Results (Detected/Not Detected)</p>
+            {qualResults.map((qr, idx) => (
+              <QualitativeCard key={`${qr.markerId}-${idx}`} result={qr} />
+            ))}
+          </section>
+        )}
+
+        {/* 
         {/* Results grouped by category */}
         <section className={styles.resultsSection}>
           <p className={styles.sectionLabel}>Your values explained</p>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeReport } from '@/lib/fallback'
 import { ocrBuffer } from '@/lib/ocr'
-import { Gender } from '@/types/lab'
+import { PatientContext } from '@/types/lab'
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +11,14 @@ export async function POST(req: NextRequest) {
     if (ct.includes('multipart/form-data')) {
       const form = await req.formData()
       const file = form.get('file') as File | null
-      const gender = (form.get('gender') as string) as Gender | undefined
+      const gender = (form.get('gender') as string) || 'unknown'
+      const ageStr = form.get('age') as string | null
+      const age = ageStr ? parseInt(ageStr, 10) : undefined
+      
+      const context: PatientContext = {
+        gender: gender as 'male' | 'female' | 'unknown',
+        age: age && age > 0 && age < 120 ? age : undefined
+      }
 
       if (!file) {
         return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 })
@@ -20,11 +27,19 @@ export async function POST(req: NextRequest) {
       // If the upload is an image, attempt OCR using tesseract.js
       if (file.type?.startsWith('image/')) {
         try {
+          console.log('[/api/analyze] Processing image upload:', file.name, file.type)
           const buffer = await file.arrayBuffer()
+          console.log('[/api/analyze] Buffer size:', buffer.byteLength)
           const text = await ocrBuffer(buffer)
+          console.log('[/api/analyze] OCR extracted text length:', text?.length || 0)
+          console.log('[/api/analyze] OCR first 200 chars:', text?.substring(0, 200))
           if (text && text.trim().length > 5) {
-            const analysis = await analyzeReport(text, gender ?? 'unknown')
+            console.log('[/api/analyze] Analyzing OCR text...')
+            const analysis = await analyzeReport(text, context)
+            console.log('[/api/analyze] Analysis complete, results:', analysis.results.length)
             return NextResponse.json(analysis)
+          } else {
+            console.warn('[/api/analyze] OCR text too short or empty')
           }
         } catch (err) {
           console.error('[/api/analyze] OCR failed:', err)
@@ -40,7 +55,7 @@ export async function POST(req: NextRequest) {
           const extracted = await extractPdfText(pdfBuf)
 
           if (extracted && extracted.trim().length > 20) {
-            const analysis = await analyzeReport(extracted, gender ?? 'unknown')
+            const analysis = await analyzeReport(extracted, context)
             return NextResponse.json(analysis)
           }
 
@@ -60,7 +75,7 @@ export async function POST(req: NextRequest) {
               }
 
               if (allText.trim().length > 20) {
-                const analysis = await analyzeReport(allText.trim(), gender ?? 'unknown')
+                const analysis = await analyzeReport(allText.trim(), context)
                 return NextResponse.json(analysis)
               }
             }
@@ -105,7 +120,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { rawText, gender } = body as { rawText: string; gender?: Gender }
+    const { rawText, gender, age } = body as { rawText: string; gender?: string; age?: number }
+    
+    const context: PatientContext = {
+      gender: (gender as 'male' | 'female' | 'unknown') ?? 'unknown',
+      age: age && age > 0 && age < 120 ? age : undefined
+    }
 
     if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
       return NextResponse.json(
@@ -121,7 +141,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const analysis = await analyzeReport(rawText.trim(), gender ?? 'unknown')
+    const analysis = await analyzeReport(rawText.trim(), context)
 
     return NextResponse.json(analysis)
 

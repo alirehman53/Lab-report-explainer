@@ -1,27 +1,29 @@
 import {
   AnalyzedResult,
-  Gender,
+  AnalyzedQualitativeResult,
   MarkerStatus,
+  QualitativeStatus,
   ParsedValue,
+  ParsedQualitativeValue,
   Pattern,
   ReportAnalysis,
   RangeSet,
-  NonNumericResult,
+  PatientContext,
 } from '@/types/lab'
 import { LAB_MARKERS } from '@/data/markers'
+import { QUALITATIVE_MARKERS } from '@/data/qualitative-markers'
 import { INTERPRETATIONS } from '@/data/interpretations'
 import { detectPatterns } from '@/data/patterns'
 import { buildDoctorQuestions } from '@/data/questions'
 import { normalizeValue } from '@/lib/parser'
+import { resolveRange } from '@/lib/age-resolver'
+import { computeDerivedMarkers } from '@/lib/calculator'
 
-function getRange(markerId: string, gender: Gender): RangeSet | null {
+function getRange(markerId: string, context: PatientContext): RangeSet | null {
   const marker = LAB_MARKERS[markerId]
   if (!marker) return null
 
-  if (marker.ranges.universal) return marker.ranges.universal
-
-  const g = gender === 'unknown' ? 'female' : gender
-  return marker.ranges[g] ?? null
+  return resolveRange(marker, context)
 }
 
 function computeStatus(value: number, range: RangeSet): MarkerStatus {
@@ -51,11 +53,11 @@ function formatRange(range: RangeSet, unit: string): string {
   return `${range.low} – ${range.high} ${unit}`
 }
 
-export function interpretMarker(parsed: ParsedValue, gender: Gender): AnalyzedResult | null {
+function interpretMarker(parsed: ParsedValue, context: PatientContext): AnalyzedResult | null {
   const marker = LAB_MARKERS[parsed.markerId]
   if (!marker) return null
 
-  const range = getRange(parsed.markerId, gender)
+  const range = getRange(parsed.markerId, context)
   if (!range) return null
 
   if (typeof parsed.value !== 'number' || isNaN(parsed.value)) return null
@@ -79,58 +81,131 @@ export function interpretMarker(parsed: ParsedValue, gender: Gender): AnalyzedRe
     explanation,
     severity:        computeSeverity(status),
     category:        marker.category,
+    resultType:      parsed.resultType || 'numeric',
+    isDerived:       parsed.resultType === 'derived',
   }
 }
 
-export function interpretFinding(parsed: ParsedValue): NonNumericResult | null {
-  if (!parsed.text && !parsed.rawName) return null
+function analyzeSingleQualitative(parsed: ParsedQualitativeValue): AnalyzedQualitativeResult | null {
+  const marker = QUALITATIVE_MARKERS.find(m => m.id === parsed.markerId)
+  if (!marker) return null
 
-  const name = parsed.rawName || parsed.markerId
-  const display = name.charAt(0).toUpperCase() + name.slice(1)
-  let cat: NonNumericResult['category'] = 'other'
-  const id = parsed.markerId
-
-  if (id.includes('urinalysis')) cat = 'urinalysis'
-  else if (id.includes('ct') || id.includes('x-ray') || id.includes('xray') || id.includes('radiology') || id.includes('mri') || id.includes('echo')) cat = 'imaging'
-  else if (id.includes('culture') || id.includes('microbiology') || id.includes('gram')) cat = 'microbiology'
-
-  // crude severity estimation based on keywords
-  const text = (parsed.text || '').toLowerCase()
+  // Get interpretation from qualitative interpretations
+  // Note: Will be imported once qualitative-interpretations.ts is created
+  const interpretation = getQualitativeInterpretation(parsed.markerId, parsed.status)
+  
+  // Determine severity based on status and marker type
   let severity: 1 | 2 | 3 = 1
-  if (text.match(/(consolidation|infiltrate|mass|opacif|pneumonia|fracture|acute)/)) severity = 3
-  else if (text.match(/(mild|moderate|enlargement|cardiomegaly|effusion|suspicious)/)) severity = 2
+  let clinicalSignificance: 'none' | 'monitor' | 'action-required' | 'urgent' = 'none'
+
+  if (parsed.status === 'positive') {
+    // High-risk infections
+    if (['hiv_antibody', 'hbsag', 'hcv_antibody'].includes(parsed.markerId)) {
+      severity = 3
+      clinicalSignificance = 'urgent'
+    }
+    // Acute infections
+    else if (['dengue_ns1', 'dengue_igm', 'typhoid_igm', 'malaria_pf', 'malaria_pv'].includes(parsed.markerId)) {
+      severity = 2
+      clinicalSignificance = 'action-required'
+    }
+    // UTI markers
+    else if (['urine_nitrites', 'urine_leukocyte_esterase'].includes(parsed.markerId)) {
+      severity = 2
+      clinicalSignificance = 'action-required'
+    }
+    // Other positive results
+    else {
+      severity = 1
+      clinicalSignificance = 'monitor'
+    }
+  } else if (parsed.status === 'borderline') {
+    severity = 1
+    clinicalSignificance = 'monitor'
+  } else if (parsed.status === 'negative') {
+    severity = 1
+    clinicalSignificance = 'none'
+  }
 
   return {
-    kind: 'finding',
     markerId: parsed.markerId,
-    displayName: display,
-    fullName: display,
-    findingText: parsed.text || '',
-    explanation: `Detected ${display}: ${parsed.text || ''}`,
+    displayName: marker.displayName,
+    fullName: marker.fullName,
+    rawValue: parsed.rawValue,
+    status: parsed.status,
+    explanation: interpretation,
     severity,
-    category: cat,
+    category: marker.category,
+    resultType: parsed.resultType,
+    titreValue: parsed.titreValue,
+    clinicalSignificance,
   }
+}
+
+function getQualitativeInterpretation(markerId: string, status: QualitativeStatus): string {
+  // Temporary fallback interpretations until qualitative-interpretations.ts is created
+  const fallbackInterpretations: Record<string, Partial<Record<QualitativeStatus, string>>> = {
+    hbsag: {
+      negative: 'HBsAg negative means you are not currently infected with Hepatitis B virus.',
+      positive: 'HBsAg positive indicates active Hepatitis B infection. Consult your doctor immediately.',
+      borderline: 'Borderline result - repeat testing recommended.',
+    },
+    dengue_ns1: {
+      negative: 'Dengue NS1 negative. If symptoms persist, consider IgM/IgG testing.',
+      positive: 'Dengue NS1 positive indicates active dengue infection. Monitor platelet count and seek medical care.',
+    },
+    urine_nitrites: {
+      negative: 'Urine nitrites negative - no bacterial infection detected.',
+      positive: 'Urine nitrites positive suggests bacterial urinary tract infection.',
+    },
+  }
+
+  const markerInterpretations = fallbackInterpretations[markerId]
+  if (markerInterpretations?.[status]) {
+    return markerInterpretations[status]!
+  }
+
+  // Generic fallbacks
+  if (status === 'negative') return 'Test result is negative.'
+  if (status === 'positive') return 'Test result is positive. Consult your doctor for interpretation.'
+  if (status === 'borderline') return 'Test result is borderline. Repeat testing may be needed.'
+  if (status === 'trace') return 'Trace amount detected.'
+  return 'Test result recorded.'
 }
 
 export function analyzeOffline(
   parsedValues: ParsedValue[],
-  gender: Gender = 'unknown'
+  parsedQualValues: ParsedQualitativeValue[],
+  context: PatientContext
 ): ReportAnalysis {
-  const results: Array<AnalyzedResult | NonNumericResult> = []
+  // Step 1: Compute derived markers
+  const derivedValues = computeDerivedMarkers(parsedValues)
+  
+  // Step 2: Analyze numeric results (original + derived)
+  const allNumericValues = [...parsedValues, ...derivedValues]
+  const numericResults: AnalyzedResult[] = []
+  const derivedResults: AnalyzedResult[] = []
 
-  for (const pv of parsedValues) {
-    if (pv.kind === 'finding') {
-      const f = interpretFinding(pv)
-      if (f) results.push(f)
-      continue
+  for (const pv of allNumericValues) {
+    const result = interpretMarker(pv, context)
+    if (result) {
+      if (result.isDerived) {
+        derivedResults.push(result)
+      } else {
+        numericResults.push(result)
+      }
     }
-
-    const result = interpretMarker(pv, gender)
-    if (result) results.push(result)
   }
 
-  // Sort: critical first, then abnormal, then normal
-  results.sort((a, b) => {
+  // Step 3: Analyze qualitative results
+  const qualitativeResults: AnalyzedQualitativeResult[] = []
+  for (const qv of parsedQualValues) {
+    const result = analyzeSingleQualitative(qv)
+    if (result) qualitativeResults.push(result)
+  }
+
+  // Step 4: Sort results - critical first, then abnormal, then normal
+  numericResults.sort((a, b) => {
     const order: Record<MarkerStatus, number> = {
       'critical-low':  0,
       'critical-high': 1,
@@ -138,28 +213,54 @@ export function analyzeOffline(
       'high':          3,
       'normal':        4,
     }
-    const aStatus = ((a as any).status ?? 'normal') as MarkerStatus
-    const bStatus = ((b as any).status ?? 'normal') as MarkerStatus
-    return order[aStatus] - order[bStatus]
+    return order[a.status] - order[b.status]
   })
 
-  // Only run numeric pattern detection on numeric results
-  const numericResults = results.filter(r => (r as AnalyzedResult).value !== undefined) as AnalyzedResult[]
-  const patterns: Pattern[] = detectPatterns(numericResults)
+  derivedResults.sort((a, b) => {
+    const order: Record<MarkerStatus, number> = {
+      'critical-low':  0,
+      'critical-high': 1,
+      'low':           2,
+      'high':          3,
+      'normal':        4,
+    }
+    return order[a.status] - order[b.status]
+  })
+
+  // Step 5: Detect patterns across ALL result types
+  const patterns: Pattern[] = detectPatterns(
+    numericResults,
+    derivedResults,
+    qualitativeResults,
+    parsedQualValues
+  )
+  
+  // Step 6: Generate doctor questions
   const doctorQuestions = buildDoctorQuestions(patterns.map(p => p.id))
 
+  // Step 7: Build summary
   const summary = {
-    normal:   numericResults.filter(r => r.status === 'normal').length,
-    low:      numericResults.filter(r => r.status === 'low').length,
-    high:     numericResults.filter(r => r.status === 'high').length,
-    critical: numericResults.filter(r => r.status === 'critical-low' || r.status === 'critical-high').length,
+    normal:   numericResults.filter(r => r.status === 'normal').length +
+              derivedResults.filter(r => r.status === 'normal').length,
+    low:      numericResults.filter(r => r.status === 'low').length +
+              derivedResults.filter(r => r.status === 'low').length,
+    high:     numericResults.filter(r => r.status === 'high').length +
+              derivedResults.filter(r => r.status === 'high').length,
+    critical: numericResults.filter(r => r.status === 'critical-low' || r.status === 'critical-high').length +
+              derivedResults.filter(r => r.status === 'critical-low' || r.status === 'critical-high').length,
+    positive:   qualitativeResults.filter(r => r.status === 'positive').length,
+    negative:   qualitativeResults.filter(r => r.status === 'negative').length,
+    borderline: qualitativeResults.filter(r => r.status === 'borderline').length,
   }
 
   return {
-    results,
+    results: numericResults,
+    qualitativeResults,
+    derivedResults,
     detectedPatterns: patterns,
     doctorQuestions,
     summary,
     source: 'offline',
+    patientContext: context,
   }
 }

@@ -1,5 +1,6 @@
-import { Gender, ReportAnalysis } from '@/types/lab'
+import { PatientContext, ReportAnalysis } from '@/types/lab'
 import { parseLabText } from '@/lib/parser'
+import { parseQualitativeText } from '@/lib/qualitative-parser'
 import { analyzeOffline } from '@/lib/analyzer'
 import { callLLM } from '@/lib/llm'
 import { buildLabPrompt } from '@/lib/prompts'
@@ -14,19 +15,34 @@ function mergeAIWithOffline(
   offline: ReportAnalysis,
   enrichment: AIEnrichment
 ): ReportAnalysis {
+  // Enrich numeric results
   const results = offline.results.map(r => {
+    const improved = enrichment.enrichedExplanations?.[r.markerId]
+    return improved ? { ...r, explanation: improved } : r
+  })
+
+  // Enrich qualitative results
+  const qualitativeResults = offline.qualitativeResults.map(r => {
+    const improved = enrichment.enrichedExplanations?.[r.markerId]
+    return improved ? { ...r, explanation: improved } : r
+  })
+
+  // Enrich derived results
+  const derivedResults = offline.derivedResults.map(r => {
     const improved = enrichment.enrichedExplanations?.[r.markerId]
     return improved ? { ...r, explanation: improved } : r
   })
 
   const doctorQuestions = [
     ...offline.doctorQuestions,
-    ...(enrichment.additionalQuestions ?? []),
-  ].slice(0, 7)
+    ...(enrichment.additionalQuestions || []),
+  ]
 
   return {
     ...offline,
     results,
+    qualitativeResults,
+    derivedResults,
     doctorQuestions,
     source: 'hybrid',
   }
@@ -34,24 +50,36 @@ function mergeAIWithOffline(
 
 export async function analyzeReport(
   rawText: string,
-  gender: Gender = 'unknown'
+  context: PatientContext
 ): Promise<ReportAnalysis> {
 
-  // Step 1 — Parse text into structured values
+  // Step 1 — Parse text into structured values (numeric and qualitative)
   const parsedValues = parseLabText(rawText)
+  const parsedQualValues = parseQualitativeText(rawText)
 
-  if (parsedValues.length === 0) {
+  if (parsedValues.length === 0 && parsedQualValues.length === 0) {
     return {
       results: [],
+      qualitativeResults: [],
+      derivedResults: [],
       detectedPatterns: [],
       doctorQuestions: [],
-      summary: { normal: 0, low: 0, high: 0, critical: 0 },
+      summary: {
+        normal: 0,
+        low: 0,
+        high: 0,
+        critical: 0,
+        positive: 0,
+        negative: 0,
+        borderline: 0,
+      },
       source: 'offline',
+      patientContext: context,
     }
   }
 
   // Step 2 — Always run offline engine (fast, zero cost, zero dependency)
-  const offlineResult = analyzeOffline(parsedValues, gender)
+  const offlineResult = analyzeOffline(parsedValues, parsedQualValues, context)
 
   // Step 3 — Try AI enrichment (best effort — fails silently)
   const apiKey = process.env.HF_TOKEN
