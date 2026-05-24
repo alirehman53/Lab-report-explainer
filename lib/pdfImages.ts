@@ -1,5 +1,5 @@
 // Extract embedded image streams from a PDF using pdf-lib.
-// Returns an array of Uint8Array containing raw image bytes (often JPEG/PNG data).
+// Returns an array of Uint8Array containing raw image bytes (JPEG/PNG data).
 export async function extractImagesFromPdf(buffer: ArrayBuffer): Promise<Uint8Array[]> {
   const { PDFDocument, PDFName } = await import('pdf-lib')
 
@@ -22,18 +22,31 @@ export async function extractImagesFromPdf(buffer: ArrayBuffer): Promise<Uint8Ar
       const subtypeStr = String(subtype)
       if (!subtypeStr.includes('Image')) continue
 
-      // Attempt to read raw bytes
-      const contents = obj.getContents ? obj.getContents() : null
-      if (contents) {
-        // Ensure Uint8Array
-        const bytes = contents instanceof Uint8Array ? contents : Uint8Array.from(contents)
-        images.push(bytes)
+      // Check the Filter to see if it's DCTDecode (JPEG) - these we can handle directly
+      const filter = dict.get ? dict.get(PDFName.of('Filter')) : null
+      const filterStr = filter ? String(filter) : ''
+      console.log('[PDF Images] Found image with filter:', filterStr)
+
+      // Only extract DCTDecode (JPEG) images - these are already in a format Sharp can handle
+      // Skip FlateDecode and other compression formats that need special decoding
+      if (filterStr.includes('DCTDecode')) {
+        const contents = obj.getContents ? obj.getContents() : null
+        if (contents) {
+          // Ensure Uint8Array
+          const bytes = contents instanceof Uint8Array ? contents : Uint8Array.from(contents)
+          console.log('[PDF Images] Extracted DCTDecode (JPEG) image, size:', bytes.length)
+          images.push(bytes)
+        }
+      } else {
+        console.log('[PDF Images] Skipping image with unsupported filter:', filterStr)
       }
     } catch (e) {
       // ignore individual object parsing errors
+      console.warn('[PDF Images] Error extracting image:', e)
       continue
     }
   }
 
+  console.log('[PDF Images] Total images extracted:', images.length)
   return images
 }

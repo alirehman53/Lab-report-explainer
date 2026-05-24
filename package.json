@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "node scripts/copy-tesseract-wasm.js",
     "deploy:vercel": "vercel --prod",
     "setup:vercel": "node -e \"console.log('Run: .\\\\scripts\\\\setup-vercel.ps1 (Windows) or bash scripts/setup-vercel.sh (Linux/Mac)')\""
   },
@@ -19,12 +18,9 @@
     "next": "16.2.6",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
-    "pdfjs-dist": "^3.11.174",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sharp": "^0.34.5",
-    "tesseract.js": "^2.1.5",
-    "tesseract.js-core": "^2.1.5"
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

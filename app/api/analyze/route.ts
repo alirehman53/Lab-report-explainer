@@ -47,51 +47,104 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // If the upload is a PDF, try converting to PNG and OCR the first page
+      // If the upload is a PDF, extract text and analyze
       if (file.type === 'application/pdf') {
         try {
+          console.log('[/api/analyze] Processing PDF upload:', file.name, file.type)
           const pdfBuf = await file.arrayBuffer()
+          console.log('[/api/analyze] PDF buffer size:', pdfBuf.byteLength)
+          
           const { extractPdfText } = await import('@/lib/pdfText')
           const extracted = await extractPdfText(pdfBuf)
+          console.log('[/api/analyze] PDF extracted text length:', extracted?.length || 0)
+          console.log('[/api/analyze] PDF first 200 chars:', extracted?.substring(0, 200))
 
           if (extracted && extracted.trim().length > 20) {
+            console.log('[/api/analyze] Analyzing PDF text...')
             const analysis = await analyzeReport(extracted, context)
+            console.log('[/api/analyze] PDF analysis complete, results:', analysis.results.length)
             return NextResponse.json(analysis)
           }
 
           // No selectable text — try extracting embedded images from the PDF and OCR them
+          console.log('[/api/analyze] No selectable text in PDF, trying embedded images...')
           try {
             const { extractImagesFromPdf } = await import('@/lib/pdfImages')
             const images = await extractImagesFromPdf(pdfBuf)
+            console.log('[/api/analyze] Found', images?.length || 0, 'embedded images in PDF')
+            
             if (images && images.length > 0) {
               let allText = ''
-              for (const imgBytes of images) {
+              for (let i = 0; i < images.length; i++) {
+                const imgBytes = images[i]
                 try {
+                  console.log(`[/api/analyze] OCRing embedded image ${i + 1}/${images.length}...`)
                   const text = await ocrBuffer(imgBytes.buffer as ArrayBuffer)
+                  console.log(`[/api/analyze] Image ${i + 1} extracted text length:`, text?.length || 0)
                   if (text && text.trim().length > 0) allText += '\n\n' + text.trim()
                 } catch (e) {
-                  console.warn('[/api/analyze] OCR on embedded image failed:', e)
+                  console.warn(`[/api/analyze] OCR on embedded image ${i + 1} failed:`, e)
                 }
               }
 
               if (allText.trim().length > 20) {
+                console.log('[/api/analyze] Analyzing text from embedded images...')
                 const analysis = await analyzeReport(allText.trim(), context)
+                console.log('[/api/analyze] PDF image analysis complete, results:', analysis.results.length)
                 return NextResponse.json(analysis)
+              } else {
+                console.log('[/api/analyze] Embedded images produced insufficient text')
               }
             }
           } catch (e) {
-            console.warn('[/api/analyze] extracting embedded images failed:', e)
+            console.warn('[/api/analyze] Extracting embedded images failed:', e)
           }
 
-          // If we reach here, no selectable text and no embedded images produced usable OCR
+          // Last resort: Try rendering PDF pages to images (requires ImageMagick)
+          console.log('[/api/analyze] Trying to render PDF pages to images...')
+          try {
+            const { renderPdfPagesToImages } = await import('@/lib/pdfRender')
+            const renderedImages = await renderPdfPagesToImages(pdfBuf, 3)
+            console.log('[/api/analyze] Rendered', renderedImages?.length || 0, 'PDF pages')
+            
+            if (renderedImages && renderedImages.length > 0) {
+              let allText = ''
+              for (let i = 0; i < renderedImages.length; i++) {
+                const imgBytes = renderedImages[i]
+                try {
+                  console.log(`[/api/analyze] OCRing rendered page ${i + 1}/${renderedImages.length}...`)
+                  const text = await ocrBuffer(imgBytes.buffer as ArrayBuffer)
+                  console.log(`[/api/analyze] Page ${i + 1} extracted text length:`, text?.length || 0)
+                  if (text && text.trim().length > 0) allText += '\n\n' + text.trim()
+                } catch (e) {
+                  console.warn(`[/api/analyze] OCR on rendered page ${i + 1} failed:`, e)
+                }
+              }
+
+              if (allText.trim().length > 20) {
+                console.log('[/api/analyze] Analyzing text from rendered PDF pages...')
+                const analysis = await analyzeReport(allText.trim(), context)
+                console.log('[/api/analyze] Rendered PDF analysis complete, results:', analysis.results.length)
+                return NextResponse.json(analysis)
+              } else {
+                console.log('[/api/analyze] Rendered pages produced insufficient text')
+              }
+            }
+          } catch (renderErr) {
+            console.warn('[/api/analyze] PDF page rendering failed:', renderErr)
+          }
+
+          // If we reach here, no selectable text and no images produced usable OCR
+          console.log('[/api/analyze] PDF extraction failed - no usable text found')
           return NextResponse.json({
-            error: 'This PDF appears to be a scanned image or contains embedded images we could not OCR. Please upload a PNG/JPEG photo of the report or paste the values as text. For automatic PDF→image conversion, enable Poppler (pdftoppm) on the server.',
+            error: 'Could not extract text from this PDF. The file may be a scanned image or encrypted. Please try: (1) Upload as PNG/JPEG image instead, or (2) Copy the text from the PDF and paste it directly.',
           }, { status: 422 })
 
         } catch (err) {
-          console.error('[/api/analyze] PDF extraction failed:', err)
+          console.error('[/api/analyze] PDF extraction error:', err)
+          const errorMsg = err instanceof Error ? err.message : String(err)
           return NextResponse.json({
-            error: 'Could not read this PDF. Please upload a photo (PNG/JPEG) of the report or paste the values directly.',
+            error: `Failed to process PDF: ${errorMsg}. Please try uploading the report as an image (PNG/JPEG) or paste the values as text.`,
           }, { status: 422 })
         }
       }

@@ -3,7 +3,10 @@
  * No API calls, no tokens needed. Models are downloaded once and cached.
  */
 
-import { pipeline } from '@xenova/transformers'
+import { pipeline, RawImage } from '@xenova/transformers'
+import os from 'os'
+import path from 'path'
+import fs from 'fs/promises'
 
 let ocrPipeline: any = null
 
@@ -24,19 +27,34 @@ export async function ocrWithVision(buffer: ArrayBuffer): Promise<string> {
     
     const ocr = await getOcrPipeline()
     
-    // Convert ArrayBuffer to Buffer
-    const imageBuffer = Buffer.from(buffer)
+    // Create a temporary file for the image
+    // TrOCR expects a file path or RawImage, not raw buffer
+    const tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-vision-'))
+    const imgPath = path.join(tmpdir, 'image.png')
     
-    // Run OCR - completely local, no API calls
-    const result = await ocr(imageBuffer)
-    
-    if (result && result[0]?.generated_text) {
-      const text = result[0].generated_text
-      console.log('[OCR Vision] Extracted text length:', text.length)
-      return text
-    }
+    try {
+      // Write buffer to temp file
+      await fs.writeFile(imgPath, Buffer.from(buffer))
+      
+      // Load image using RawImage.read() for local file paths
+      const image = await RawImage.read(imgPath)
+      
+      // Run OCR - completely local, no API calls
+      const result = await ocr(image)
+      
+      if (result && result[0]?.generated_text) {
+        const text = result[0].generated_text
+        console.log('[OCR Vision] Extracted text length:', text.length)
+        return text
+      }
 
-    return ''
+      return ''
+    } finally {
+      // Clean up temp file
+      try {
+        await fs.rm(tmpdir, { recursive: true, force: true })
+      } catch (_) {}
+    }
   } catch (err) {
     console.error('[OCR Vision] Error:', err)
     return ''

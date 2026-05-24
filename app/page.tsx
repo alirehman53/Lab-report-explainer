@@ -260,11 +260,11 @@ export default function HomePage() {
               </svg>
             </div>
             <p className={styles.uploadTitle}>Drop your medical report here</p>
-            <p className={styles.uploadSub}>TXT, CSV, or plain text · values and findings extracted automatically</p>
+            <p className={styles.uploadSub}>PDF, Image (PNG/JPG), TXT, or CSV · text extracted automatically</p>
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,.csv,.text,image/*,application/pdf"
+              accept=".txt,.csv,.text,image/*,.pdf,.png,.jpg,.jpeg,application/pdf"
               style={{ display: 'none' }}
               onChange={onFileChange}
             />
@@ -273,17 +273,38 @@ export default function HomePage() {
           {imagePreview && (
             <div className={styles.imagePreviewWrap}>
               {imageFile?.type === 'application/pdf' ? (
-                <div>
-                  <a href={imagePreview} target="_blank" rel="noreferrer" className={styles.pdfPreviewLink}>Preview PDF</a>
+                <div style={{ padding: '24px', background: 'var(--color-surface-raised)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <line x1="10" y1="9" x2="8" y2="9"/>
+                    </svg>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-ink)' }}>📄 {imageFile.name}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--color-ink-muted)' }}>
+                        PDF ready · Text will be extracted automatically
+                      </div>
+                    </div>
+                  </div>
+                  <a href={imagePreview} target="_blank" rel="noreferrer" className={styles.pdfPreviewLink}>
+                    Open PDF Preview
+                  </a>
                 </div>
               ) : (
                 <img src={imagePreview} alt="Preview" className={styles.imagePreview} />
               )}
               <div style={{ marginTop: 8 }}>
                 <button className={styles.secondaryBtn} onClick={() => { setImagePreview(null); setImageFile(null) }}>
-                  Remove image
+                  Remove {imageFile?.type === 'application/pdf' ? 'PDF' : 'image'}
                 </button>
-                <span style={{ marginLeft: 12, color: 'var(--color-ink-muted)' }}>Preview ready — click "Explain my results →" to run server-side extraction.</span>
+                <span style={{ marginLeft: 12, color: 'var(--color-ink-muted)' }}>
+                  {imageFile?.type === 'application/pdf' 
+                    ? 'Click "Explain my results →" to extract text from PDF and analyze'
+                    : 'Preview ready — click "Explain my results →" to run OCR extraction'}
+                </span>
               </div>
             </div>
           )}
@@ -336,6 +357,37 @@ export default function HomePage() {
               'Explain my results →'
             )}
           </button>
+        </div>
+
+        {/* Features highlight */}
+        <div style={{ 
+          maxWidth: '800px', 
+          margin: '48px auto 24px', 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '16px',
+          padding: '0 24px'
+        }}>
+          <div style={{ textAlign: 'center', padding: '16px' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📄</div>
+            <div style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: '4px' }}>PDF Support</div>
+            <div style={{ fontSize: '13px', color: 'var(--color-ink-muted)' }}>Upload lab reports as PDF files</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '16px' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🖼️</div>
+            <div style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: '4px' }}>Image OCR</div>
+            <div style={{ fontSize: '13px', color: 'var(--color-ink-muted)' }}>Upload photos or scanned reports</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '16px' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>💬</div>
+            <div style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: '4px' }}>Plain Explanations</div>
+            <div style={{ fontSize: '13px', color: 'var(--color-ink-muted)' }}>Each result explained clearly</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '16px' }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+            <div style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: '4px' }}>Privacy First</div>
+            <div style={{ fontSize: '13px', color: 'var(--color-ink-muted)' }}>Processed locally, not stored</div>
+          </div>
         </div>
 
         {/* Stats strip */}
