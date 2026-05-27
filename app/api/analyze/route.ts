@@ -24,6 +24,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 })
       }
 
+      // Check if file is empty
+      if (file.size === 0) {
+        console.error('[/api/analyze] File is empty (0 bytes)')
+        return NextResponse.json({ 
+          error: 'Uploaded file is empty (0 bytes). Please check your upload and try again.' 
+        }, { status: 400 })
+      }
+
+      console.log('[/api/analyze] File size:', file.size, 'bytes')
+
       // If the upload is an image, attempt OCR using tesseract.js
       if (file.type?.startsWith('image/')) {
         try {
@@ -53,6 +63,13 @@ export async function POST(req: NextRequest) {
           console.log('[/api/analyze] Processing PDF upload:', file.name, file.type)
           const pdfBuf = await file.arrayBuffer()
           console.log('[/api/analyze] PDF buffer size:', pdfBuf.byteLength)
+          
+          if (pdfBuf.byteLength === 0) {
+            console.error('[/api/analyze] PDF buffer is empty after reading')
+            return NextResponse.json({ 
+              error: 'PDF file appears to be empty. Please check the file and try uploading again.' 
+            }, { status: 400 })
+          }
           
           const { extractPdfText } = await import('@/lib/pdfText')
           const extracted = await extractPdfText(pdfBuf)
@@ -91,7 +108,13 @@ export async function POST(req: NextRequest) {
                 console.log('[/api/analyze] Analyzing text from embedded images...')
                 const analysis = await analyzeReport(allText.trim(), context)
                 console.log('[/api/analyze] PDF image analysis complete, results:', analysis.results.length)
-                return NextResponse.json(analysis)
+                
+                // Only return if we actually found lab results, not just random text from logos
+                if (analysis.results.length > 0 || analysis.qualitativeResults?.length > 0) {
+                  return NextResponse.json(analysis)
+                } else {
+                  console.log('[/api/analyze] Embedded images produced text but no lab results found, continuing to page rendering...')
+                }
               } else {
                 console.log('[/api/analyze] Embedded images produced insufficient text')
               }
@@ -100,44 +123,11 @@ export async function POST(req: NextRequest) {
             console.warn('[/api/analyze] Extracting embedded images failed:', e)
           }
 
-          // Last resort: Try rendering PDF pages to images (requires ImageMagick)
-          console.log('[/api/analyze] Trying to render PDF pages to images...')
-          try {
-            const { renderPdfPagesToImages } = await import('@/lib/pdfRender')
-            const renderedImages = await renderPdfPagesToImages(pdfBuf, 3)
-            console.log('[/api/analyze] Rendered', renderedImages?.length || 0, 'PDF pages')
-            
-            if (renderedImages && renderedImages.length > 0) {
-              let allText = ''
-              for (let i = 0; i < renderedImages.length; i++) {
-                const imgBytes = renderedImages[i]
-                try {
-                  console.log(`[/api/analyze] OCRing rendered page ${i + 1}/${renderedImages.length}...`)
-                  const text = await ocrBuffer(imgBytes.buffer as ArrayBuffer)
-                  console.log(`[/api/analyze] Page ${i + 1} extracted text length:`, text?.length || 0)
-                  if (text && text.trim().length > 0) allText += '\n\n' + text.trim()
-                } catch (e) {
-                  console.warn(`[/api/analyze] OCR on rendered page ${i + 1} failed:`, e)
-                }
-              }
-
-              if (allText.trim().length > 20) {
-                console.log('[/api/analyze] Analyzing text from rendered PDF pages...')
-                const analysis = await analyzeReport(allText.trim(), context)
-                console.log('[/api/analyze] Rendered PDF analysis complete, results:', analysis.results.length)
-                return NextResponse.json(analysis)
-              } else {
-                console.log('[/api/analyze] Rendered pages produced insufficient text')
-              }
-            }
-          } catch (renderErr) {
-            console.warn('[/api/analyze] PDF page rendering failed:', renderErr)
-          }
-
-          // If we reach here, no selectable text and no images produced usable OCR
-          console.log('[/api/analyze] PDF extraction failed - no usable text found')
+          // If all methods fail, return helpful error
+          // Note: PDFs are now converted to images client-side before upload
+          console.log('[/api/analyze] All PDF extraction methods exhausted')
           return NextResponse.json({
-            error: 'Could not extract text from this PDF. The file may be a scanned image or encrypted. Please try: (1) Upload as PNG/JPEG image instead, or (2) Copy the text from the PDF and paste it directly.',
+            error: 'Unable to extract text from this PDF. The file may be corrupted or password-protected.',
           }, { status: 422 })
 
         } catch (err) {

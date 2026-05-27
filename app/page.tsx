@@ -34,11 +34,29 @@ export default function HomePage() {
   async function handleFile(file: File) {
     if (!file) return
     try {
-      if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-        // image or PDF — set preview and keep for upload (PDF shows a preview link)
+      if (file.type.startsWith('image/')) {
+        // Regular image - set preview and keep for upload
         const url = URL.createObjectURL(file)
         setImagePreview(url)
         setImageFile(file)
+        return
+      }
+
+      if (file.type === 'application/pdf') {
+        // PDF - convert to image in browser before uploading
+        setLoading(true)
+        setError('Converting PDF to image...')
+        try {
+          const imageFile = await convertPdfToImage(file)
+          const url = URL.createObjectURL(imageFile)
+          setImagePreview(url)
+          setImageFile(imageFile)
+          setError('') // Clear conversion message
+        } catch (err: any) {
+          setError(`PDF conversion failed: ${err.message}. Please try uploading page 1 as PNG/JPG instead.`)
+        } finally {
+          setLoading(false)
+        }
         return
       }
 
@@ -47,6 +65,47 @@ export default function HomePage() {
     } catch {
       setError('Could not read file. Try copying and pasting your values instead.')
     }
+  }
+
+  // Convert PDF to PNG image using PDF.js in the browser
+  async function convertPdfToImage(file: File): Promise<File> {
+    // Dynamically import PDF.js for browser
+    const pdfjsLib = await import('pdfjs-dist')
+    
+    // Use local worker file served from public directory
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+    
+    // Read PDF file
+    const arrayBuffer = await file.arrayBuffer()
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+    
+    // Render first page
+    const page = await pdf.getPage(1)
+    const scale = 2.0 // High resolution for OCR
+    const viewport = page.getViewport({ scale })
+    
+    // Create canvas
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const context = canvas.getContext('2d')!
+    
+    // Render PDF page to canvas
+    await page.render({
+      canvasContext: context,
+      viewport: viewport,
+    }).promise
+    
+    // Convert canvas to Blob
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (b) resolve(b)
+        else reject(new Error('Failed to convert canvas to blob'))
+      }, 'image/png')
+    })
+    
+    // Create File from Blob
+    return new File([blob], file.name.replace('.pdf', '.png'), { type: 'image/png' })
   }
 
   function onFileChange(e: ChangeEvent<HTMLInputElement>) {
