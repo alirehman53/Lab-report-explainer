@@ -26,7 +26,8 @@ export async function ocrBuffer(buffer: ArrayBuffer): Promise<string> {
     const pngBuffer = await sharp(Buffer.from(buffer))
       .png()
       .toBuffer()
-    processedBuffer = pngBuffer.buffer.slice(pngBuffer.byteOffset, pngBuffer.byteOffset + pngBuffer.byteLength)
+    const arrayBuffer = pngBuffer.buffer as ArrayBuffer
+    processedBuffer = arrayBuffer.slice(pngBuffer.byteOffset, pngBuffer.byteOffset + pngBuffer.byteLength)
     console.log('[OCR] Converted image to PNG format, size:', processedBuffer.byteLength)
   } catch (conversionErr) {
     console.warn('[OCR] Image conversion failed, using original buffer:', conversionErr)

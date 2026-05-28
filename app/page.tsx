@@ -33,6 +33,14 @@ export default function HomePage() {
 
   async function handleFile(file: File) {
     if (!file) return
+    
+    // File size validation (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      setError('File size must be less than 10MB')
+      return
+    }
+    
     try {
       if (file.type.startsWith('image/')) {
         // Regular image - set preview and keep for upload
@@ -94,6 +102,7 @@ export default function HomePage() {
     await page.render({
       canvasContext: context,
       viewport: viewport,
+      canvas: canvas,
     }).promise
     
     // Convert canvas to Blob
@@ -294,7 +303,13 @@ export default function HomePage() {
               max="120"
               placeholder="e.g., 35"
               value={age}
-              onChange={(e) => setAge(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value
+                // Prevent negative and values over 120
+                if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 120)) {
+                  setAge(val)
+                }
+              }}
               className={styles.ageInput}
             />
           </div>
@@ -379,7 +394,15 @@ export default function HomePage() {
             rows={4}
           />
 
-          {error && <div className={styles.errorBox}>{error}</div>}
+          {error && (
+            <div className={styles.errorBox} role="alert">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v4m0 4h.01"/>
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
           <div className={styles.helperRow}>
             <div className={styles.chips}>
               {examples.map((ex, i) => (
@@ -410,6 +433,7 @@ export default function HomePage() {
             {loading ? (
               <span className={styles.loadingText}>
                 <span className={styles.spinner} />
+                <span>Analyzing...</span>
                 Analyzing your results…
               </span>
             ) : (

@@ -40,20 +40,7 @@ export function parseLabText(raw: string): ParsedValue[] {
     if (seen.has(markerId)) continue
 
     seen.add(markerId)
-    parsed.push({ markerId, rawName: match[1].trim(), value, unit, kind: 'numeric' })
-  }
-
-  // Extract free-text findings for imaging, urinalysis, and cultures.
-  const FINDING_PATTERN = /(?:(Chest X[- ]ray|X[- ]ray|CT scan|CT|MRI|Radiology|Urinalysis|Culture|Microbiology|Gram stain|Echo|ECG|Electrocardiogram)[:\-]?\s*)([^\n]+)/gi
-  let fmatch: RegExpExecArray | null
-  FINDING_PATTERN.lastIndex = 0
-  while ((fmatch = FINDING_PATTERN.exec(raw)) !== null) {
-    const name = fmatch[1].trim()
-    const text = fmatch[2].trim()
-    const id = 'finding:' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    if (seen.has(id)) continue
-    seen.add(id)
-    parsed.push({ markerId: id, rawName: name, text, kind: 'finding' })
+    parsed.push({ markerId, rawName: match[1].trim(), value, unit, resultType: 'numeric' })
   }
 
   return parsed

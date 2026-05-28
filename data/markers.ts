@@ -11,6 +11,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Hemoglobin · Oxygen-carrying protein',
     unit: 'g/dL',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 13.5, high: 17.5, criticalLow: 7.0,  criticalHigh: 20.0 },
       female: { low: 12.0, high: 16.0, criticalLow: 7.0,  criticalHigh: 20.0 },
@@ -24,6 +25,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Hematocrit · Red cell percentage',
     unit: '%',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 41, high: 53, criticalLow: 21, criticalHigh: 65 },
       female: { low: 36, high: 46, criticalLow: 21, criticalHigh: 65 },
@@ -37,6 +39,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Red Blood Cell Count',
     unit: '×10⁶/μL',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 4.5, high: 5.9, criticalLow: 2.0, criticalHigh: 8.0 },
       female: { low: 4.0, high: 5.2, criticalLow: 2.0, criticalHigh: 8.0 },
@@ -50,6 +53,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Mean Corpuscular Volume · Cell size',
     unit: 'fL',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 80, high: 100, criticalLow: 60, criticalHigh: 125 },
     },
@@ -62,6 +66,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Mean Corpuscular Hemoglobin · Hb per cell',
     unit: 'pg',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 27, high: 33, criticalLow: 15, criticalHigh: 45 },
     },
@@ -74,6 +79,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Mean Corpuscular Hemoglobin Concentration',
     unit: 'g/dL',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 32, high: 36, criticalLow: 28, criticalHigh: 40 },
     },
@@ -86,6 +92,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'White Blood Cell Count · Immune defense',
     unit: '×10³/μL',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 4.5, high: 11.0, criticalLow: 2.0, criticalHigh: 30.0 },
     },
@@ -98,6 +105,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Neutrophils · Bacterial fighters',
     unit: '%',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 40, high: 70, criticalLow: 20, criticalHigh: 90 },
     },
@@ -110,6 +118,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Lymphocytes · Viral fighters',
     unit: '%',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 20, high: 40, criticalLow: 5, criticalHigh: 70 },
     },
@@ -122,6 +131,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Monocytes · Immune cleanup cells',
     unit: '%',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 2, high: 8, criticalLow: 0, criticalHigh: 20 },
     },
@@ -134,6 +144,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Eosinophils · Allergy & parasite response',
     unit: '%',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 1, high: 4, criticalLow: 0, criticalHigh: 15 },
     },
@@ -146,6 +157,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Platelet Count · Blood clotting',
     unit: '×10³/μL',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 150, high: 400, criticalLow: 50, criticalHigh: 1000 },
     },
@@ -158,6 +170,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Red Cell Distribution Width · Cell size variation',
     unit: '%',
     category: 'cbc',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 11.5, high: 14.5, criticalLow: 9, criticalHigh: 20 },
     },
@@ -172,6 +185,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Serum Iron · Circulating iron',
     unit: 'μg/dL',
     category: 'iron',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 65, high: 175, criticalLow: 20, criticalHigh: 350 },
       female: { low: 50, high: 170, criticalLow: 20, criticalHigh: 350 },
@@ -185,6 +199,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Ferritin · Iron storage protein',
     unit: 'ng/mL',
     category: 'iron',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 24, high: 336, criticalLow: 5,  criticalHigh: 1000 },
       female: { low: 11, high: 307, criticalLow: 5,  criticalHigh: 1000 },
@@ -198,6 +213,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Total Iron Binding Capacity',
     unit: 'μg/dL',
     category: 'iron',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 250, high: 370, criticalLow: 100, criticalHigh: 500 },
     },
@@ -212,6 +228,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Alanine Aminotransferase · Liver enzyme',
     unit: 'U/L',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 7,  high: 56, criticalLow: 0, criticalHigh: 500 },
       female: { low: 7,  high: 45, criticalLow: 0, criticalHigh: 500 },
@@ -225,6 +242,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Aspartate Aminotransferase · Liver/heart enzyme',
     unit: 'U/L',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 10, high: 40, criticalLow: 0, criticalHigh: 500 },
       female: { low: 10, high: 35, criticalLow: 0, criticalHigh: 500 },
@@ -238,6 +256,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Alkaline Phosphatase · Liver/bone enzyme',
     unit: 'U/L',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 44, high: 147, criticalLow: 0, criticalHigh: 600 },
     },
@@ -250,6 +269,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Total Bilirubin · Bile pigment',
     unit: 'mg/dL',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0.1, high: 1.2, criticalLow: 0, criticalHigh: 15 },
     },
@@ -262,6 +282,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Direct Bilirubin · Conjugated bile pigment',
     unit: 'mg/dL',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0, high: 0.3, criticalLow: 0, criticalHigh: 10 },
     },
@@ -274,6 +295,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Albumin · Main blood protein',
     unit: 'g/dL',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 3.5, high: 5.0, criticalLow: 2.0, criticalHigh: 6.0 },
     },
@@ -286,6 +308,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Total Protein · Blood protein level',
     unit: 'g/dL',
     category: 'liver',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 6.0, high: 8.3, criticalLow: 3.0, criticalHigh: 12.0 },
     },
@@ -300,6 +323,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Thyroid Stimulating Hormone',
     unit: 'mIU/L',
     category: 'thyroid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0.4, high: 4.0, criticalLow: 0.01, criticalHigh: 100 },
     },
@@ -312,6 +336,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Triiodothyronine · Active thyroid hormone',
     unit: 'ng/dL',
     category: 'thyroid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 80, high: 200, criticalLow: 40, criticalHigh: 400 },
     },
@@ -324,6 +349,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Thyroxine · Thyroid hormone',
     unit: 'μg/dL',
     category: 'thyroid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 4.5, high: 11.2, criticalLow: 1.0, criticalHigh: 20 },
     },
@@ -338,6 +364,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Creatinine · Kidney filtration marker',
     unit: 'mg/dL',
     category: 'kidney',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 0.7, high: 1.3, criticalLow: 0.1, criticalHigh: 10.0 },
       female: { low: 0.6, high: 1.1, criticalLow: 0.1, criticalHigh: 10.0 },
@@ -351,6 +378,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Blood Urea Nitrogen · Kidney waste marker',
     unit: 'mg/dL',
     category: 'kidney',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 7, high: 20, criticalLow: 2, criticalHigh: 100 },
     },
@@ -363,6 +391,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Blood Urea · Kidney waste product',
     unit: 'mg/dL',
     category: 'kidney',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 15, high: 45, criticalLow: 5, criticalHigh: 200 },
     },
@@ -375,6 +404,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Estimated Glomerular Filtration Rate',
     unit: 'mL/min/1.73m²',
     category: 'kidney',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 60, high: 120, criticalLow: 15, criticalHigh: 150 },
     },
@@ -387,6 +417,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Uric Acid · Gout marker',
     unit: 'mg/dL',
     category: 'kidney',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 3.5, high: 7.2, criticalLow: 1.0, criticalHigh: 15.0 },
       female: { low: 2.6, high: 6.0, criticalLow: 1.0, criticalHigh: 15.0 },
@@ -402,6 +433,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Total Cholesterol · Blood fat',
     unit: 'mg/dL',
     category: 'lipid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0, high: 200, criticalLow: 0, criticalHigh: 400 },
     },
@@ -414,6 +446,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'HDL Cholesterol · "Good" cholesterol',
     unit: 'mg/dL',
     category: 'lipid',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 40, high: 60, criticalLow: 20, criticalHigh: 120 },
       female: { low: 50, high: 60, criticalLow: 20, criticalHigh: 120 },
@@ -427,6 +460,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'LDL Cholesterol · "Bad" cholesterol',
     unit: 'mg/dL',
     category: 'lipid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0, high: 100, criticalLow: 0, criticalHigh: 300 },
     },
@@ -439,6 +473,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Triglycerides · Blood fat storage',
     unit: 'mg/dL',
     category: 'lipid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0, high: 150, criticalLow: 0, criticalHigh: 1000 },
     },
@@ -451,6 +486,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'VLDL Cholesterol · Very low density lipoprotein',
     unit: 'mg/dL',
     category: 'lipid',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 2, high: 30, criticalLow: 0, criticalHigh: 100 },
     },
@@ -465,6 +501,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Fasting Blood Sugar · Diabetes marker',
     unit: 'mg/dL',
     category: 'diabetes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 70, high: 99, criticalLow: 40, criticalHigh: 500 },
     },
@@ -477,6 +514,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Random Blood Sugar',
     unit: 'mg/dL',
     category: 'diabetes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 70, high: 140, criticalLow: 40, criticalHigh: 600 },
     },
@@ -489,6 +527,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Glycated Hemoglobin · 3-month blood sugar average',
     unit: '%',
     category: 'diabetes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0, high: 5.7, criticalLow: 0, criticalHigh: 15 },
     },
@@ -503,6 +542,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Sodium · Fluid & nerve balance',
     unit: 'mEq/L',
     category: 'electrolytes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 136, high: 145, criticalLow: 120, criticalHigh: 160 },
     },
@@ -515,6 +555,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Potassium · Heart & muscle function',
     unit: 'mEq/L',
     category: 'electrolytes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 3.5, high: 5.0, criticalLow: 2.5, criticalHigh: 6.5 },
     },
@@ -527,6 +568,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Calcium · Bone & muscle function',
     unit: 'mg/dL',
     category: 'electrolytes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 8.5, high: 10.5, criticalLow: 6.0, criticalHigh: 14.0 },
     },
@@ -539,6 +581,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Magnesium · Muscle & enzyme function',
     unit: 'mg/dL',
     category: 'electrolytes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 1.7, high: 2.2, criticalLow: 1.0, criticalHigh: 4.0 },
     },
@@ -551,6 +594,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Chloride · Fluid balance',
     unit: 'mEq/L',
     category: 'electrolytes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 96, high: 106, criticalLow: 80, criticalHigh: 120 },
     },
@@ -563,6 +607,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Bicarbonate · Acid-base balance',
     unit: 'mEq/L',
     category: 'electrolytes',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 22, high: 29, criticalLow: 10, criticalHigh: 40 },
     },
@@ -577,6 +622,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'C-Reactive Protein · Inflammation marker',
     unit: 'mg/L',
     category: 'cardiac',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 0, high: 5.0, criticalLow: 0, criticalHigh: 200 },
     },
@@ -589,6 +635,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Erythrocyte Sedimentation Rate · Inflammation',
     unit: 'mm/hr',
     category: 'cardiac',
+    resultType: 'numeric',
     ranges: {
       male:   { low: 0, high: 15, criticalLow: 0, criticalHigh: 120 },
       female: { low: 0, high: 20, criticalLow: 0, criticalHigh: 120 },
@@ -602,6 +649,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Vitamin D · Bone & immune health',
     unit: 'ng/mL',
     category: 'cardiac',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 30, high: 100, criticalLow: 10, criticalHigh: 150 },
     },
@@ -614,6 +662,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
     fullName: 'Vitamin B12 · Nerve & blood cell health',
     unit: 'pg/mL',
     category: 'cardiac',
+    resultType: 'numeric',
     ranges: {
       universal: { low: 200, high: 900, criticalLow: 100, criticalHigh: 2000 },
     },

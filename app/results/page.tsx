@@ -23,19 +23,35 @@ const STATUS_LABEL: Record<MarkerStatus, string> = {
 }
 
 const CATEGORY_LABEL: Record<MarkerCategory, string> = {
-  cbc:          'Complete Blood Count (CBC)',
-  iron:         'Iron Studies',
-  liver:        'Liver Panel',
-  thyroid:      'Thyroid',
-  kidney:       'Kidney Function',
-  lipid:        'Lipid Panel',
-  diabetes:     'Blood Sugar',
-  electrolytes: 'Electrolytes',
-  cardiac:      'Inflammation & Vitamins',
-  imaging:      'Imaging & Radiology',
-  microbiology: 'Microbiology & Cultures',
-  urinalysis:   'Urinalysis',
-  other:        'Other findings',
+  cbc:                    'Complete Blood Count (CBC)',
+  iron:                   'Iron Studies',
+  liver:                  'Liver Panel',
+  thyroid:                'Thyroid',
+  kidney:                 'Kidney Function',
+  lipid:                  'Lipid Panel',
+  diabetes:               'Blood Sugar',
+  electrolytes:           'Electrolytes',
+  cardiac:                'Cardiac Markers',
+  'hormones-female':      'Female Hormones',
+  'hormones-male':        'Male Hormones',
+  'hormones-adrenal':     'Adrenal Hormones',
+  coagulation:            'Coagulation',
+  'tumor-markers':        'Tumor Markers',
+  'infectious-serology':  'Infectious Disease',
+  autoimmune:             'Autoimmune',
+  'urinalysis-numeric':   'Urinalysis (Numeric)',
+  'urinalysis-qualitative': 'Urinalysis (Qualitative)',
+  'bone-minerals':        'Bone & Minerals',
+  'vitamins-nutrition':   'Vitamins & Nutrition',
+  'allergy-immunology':   'Allergy & Immunology',
+  'drug-monitoring':      'Drug Monitoring',
+  'cardiac-markers':      'Cardiac Markers',
+  stool:                  'Stool Analysis',
+  csf:                    'CSF Analysis',
+  derived:                'Calculated Values',
+  imaging:                'Imaging & Radiology',
+  microbiology:           'Microbiology & Cultures',
+  other:                  'Other findings',
 }
 
 function cssStatus(status: MarkerStatus): string {
@@ -154,7 +170,7 @@ function QualitativeCard({ result }: { result: AnalyzedQualitativeResult }) {
 
       <p className={styles.explanation}>{result.explanation}</p>
 
-      {result.severity && result.severity !== 'none' && (
+      {result.severity && typeof result.severity === 'string' && result.severity !== 'none' && (
         <div className={`${styles.severityNote} ${styles[result.severity]}`}>
           Severity: {result.severity}
         </div>

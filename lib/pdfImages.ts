@@ -62,7 +62,7 @@ export async function extractImagesFromPdf(buffer: ArrayBuffer): Promise<Uint8Ar
             raw: {
               width: Number(width),
               height: Number(height),
-              channels: channels
+              channels: channels as 1 | 2 | 3 | 4
             }
           }).png().toBuffer()
           
