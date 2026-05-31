@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeReport } from '@/lib/fallback'
-import { ocrBuffer } from '@/lib/ocr'
+import { ocrBuffer, ocrBufferMulti } from '@/lib/ocr'
 import { PatientContext } from '@/types/lab'
 
 export async function POST(req: NextRequest) {
@@ -40,12 +40,13 @@ export async function POST(req: NextRequest) {
           console.log('[/api/analyze] Processing image upload:', file.name, file.type)
           const buffer = await file.arrayBuffer()
           console.log('[/api/analyze] Buffer size:', buffer.byteLength)
-          const text = await ocrBuffer(buffer)
-          console.log('[/api/analyze] OCR extracted text length:', text?.length || 0)
-          console.log('[/api/analyze] OCR first 200 chars:', text?.substring(0, 200))
-          if (text && text.trim().length > 5) {
+          // Multiple OCR passes (upscaled + native) reconciled by the analyzer.
+          const texts = await ocrBufferMulti(buffer)
+          const combined = texts.join('\n').trim()
+          console.log('[/api/analyze] OCR passes:', texts.length, 'combined length:', combined.length)
+          if (combined.length > 5) {
             console.log('[/api/analyze] Analyzing OCR text...')
-            const analysis = await analyzeReport(text, context)
+            const analysis = await analyzeReport(texts, context)
             console.log('[/api/analyze] Analysis complete, results:', analysis.results.length)
             return NextResponse.json(analysis)
           } else {

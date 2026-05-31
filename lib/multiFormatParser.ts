@@ -195,11 +195,18 @@ function extractWithPattern(
   let match
   while ((match = pattern.exec(text)) !== null) {
     const [fullMatch, markerText, valueText, unitText] = match
-    
+
+    // Some patterns/matches don't capture a marker name or value group — guard
+    // against undefined so a single odd line can't crash the whole analysis.
+    if (!markerText || !valueText) continue
+
+    // Avoid zero-width matches causing an infinite loop on global regexes.
+    if (match.index === pattern.lastIndex) pattern.lastIndex++
+
     // Clean and parse value
     const cleanValue = valueText.replace(',', '.')
     const value = parseFloat(cleanValue)
-    
+
     if (isNaN(value)) continue
     
     // Find matching marker

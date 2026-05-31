@@ -119,8 +119,15 @@ export function parseLabText(raw: string): ParsedValue[] {
 
   // Fallback: if the text had no usable line structure (e.g. a single flattened
   // line) we may have found very little — try the multi-format/table parser.
+  // Wrapped defensively so a parsing edge case can never crash the whole
+  // analysis (e.g. a qualitative-only malaria report).
   if (parsed.length < 3) {
-    const multiFormatResults = extractAllLabValues(processedText)
+    let multiFormatResults: ReturnType<typeof extractAllLabValues> = []
+    try {
+      multiFormatResults = extractAllLabValues(processedText)
+    } catch (err) {
+      console.warn('[Parser] Multi-format fallback failed, continuing with row-aware results:', err)
+    }
     for (const result of multiFormatResults) {
       if (result.confidence >= 60 && !seen.has(result.markerId)) {
         const normalizedValue = normalizeValue(result.value, result.unit, result.markerId)

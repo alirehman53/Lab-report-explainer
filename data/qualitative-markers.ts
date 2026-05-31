@@ -164,8 +164,8 @@ export const QUALITATIVE_MARKERS: QualitativeMarker[] = [
 
   {
     id: 'malaria-pf',
-    names: ['malaria pf', 'p. falciparum', 'pf antigen', 'malaria falciparum', 'plasmodium falciparum'],
-    displayName: 'Malaria Pf',
+    names: ['malaria pf', 'p. falciparum', 'pf antigen', 'malaria falciparum', 'plasmodium falciparum', 'malaria', 'mp', 'mp ict', 'malaria ict', 'ict malaria', 'malarial parasites', 'malaria parasite', 'malarial parasite', 'malaria antigen', 'malaria test', 'mp by ict', 'malaria parasites'],
+    displayName: 'Malaria',
     fullName: 'Plasmodium falciparum Antigen · Malaria detection',
     category: 'infectious-serology',
     resultType: 'qualitative',

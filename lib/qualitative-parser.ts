@@ -1,12 +1,73 @@
 import { ParsedQualitativeValue, QualitativeStatus } from '@/types/lab'
 import { QUALITATIVE_MARKERS } from '@/data/qualitative-markers'
 
+// Lowercase and reduce any run of non-alphanumeric characters (hyphens, dots,
+// slashes, extra spaces) to a single space, so "Non-reactive", "non reactive"
+// and "nonreactive" all compare equal.
+function canonical(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
 // Build alias map for fast lookup during parsing
 const QUALITATIVE_MARKER_ALIAS_MAP = new Map<string, string>()
 for (const marker of QUALITATIVE_MARKERS) {
   for (const name of marker.names) {
     QUALITATIVE_MARKER_ALIAS_MAP.set(name.toLowerCase(), marker.id)
   }
+}
+
+// Aliases sorted longest-first, with word-boundary regexes, for the fuzzy pass
+// (so the most specific marker name on a line wins, and short aliases like "mp"
+// only match as a standalone word, never inside another word).
+const SORTED_QUAL_ALIASES: Array<{ alias: string; id: string; re: RegExp }> = []
+for (const marker of QUALITATIVE_MARKERS) {
+  for (const name of marker.names) {
+    const alias = name.toLowerCase()
+    SORTED_QUAL_ALIASES.push({
+      alias,
+      id: marker.id,
+      re: new RegExp(`(?:^|[^a-z0-9])${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^a-z0-9])`, 'i'),
+    })
+  }
+}
+SORTED_QUAL_ALIASES.sort((a, b) => b.alias.length - a.alias.length)
+
+// Order matters: borderline/trace are most specific; negative is checked BEFORE
+// positive so "non-reactive"/"not detected" aren't mis-caught by the substrings
+// "reactive"/"detected".
+const STATUS_KEYWORDS: Array<{ status: QualitativeStatus; words: string[] }> = [
+  { status: 'borderline', words: ['equivocal', 'indeterminate', 'borderline', 'weakly reactive', 'grey zone'] },
+  { status: 'trace', words: ['trace'] },
+  { status: 'negative', words: ['non-reactive', 'nonreactive', 'non reactive', 'not detected', 'negative', 'absent', 'not seen', 'no growth', 'nil'] },
+  { status: 'positive', words: ['reactive', 'positive', 'detected', 'present', 'seen', 'isolated', 'grown'] },
+]
+
+/**
+ * Fuzzy fallback: find the most specific qualitative marker named ANYWHERE on
+ * the line, then read a status keyword from the line. Requires BOTH a marker
+ * and a status word, so it won't fire on incidental mentions. This catches real
+ * report formats the strict parser misses, e.g. "MP ICT . Negative" or
+ * "ICT Malarial parasites (falciparum / vivax) was negative".
+ */
+function parseLineFuzzy(line: string): ParsedQualitativeValue | null {
+  const lower = line.toLowerCase()
+
+  let markerId: string | null = null
+  let aliasLen = 0
+  for (const { id, alias, re } of SORTED_QUAL_ALIASES) {
+    if (re.test(line)) { markerId = id; aliasLen = alias.length; break } // longest-first → first hit is best
+  }
+  if (!markerId) return null
+  void aliasLen
+
+  // "non-reactive"/"not detected" must beat "reactive"/"detected", so negative
+  // and borderline are checked before positive (order in STATUS_KEYWORDS).
+  for (const { status, words } of STATUS_KEYWORDS) {
+    if (words.some(w => lower.includes(w))) {
+      return { markerId, rawName: line.trim(), status, rawValue: line.trim(), resultType: 'qualitative' }
+    }
+  }
+  return null
 }
 
 /**
@@ -22,15 +83,18 @@ for (const marker of QUALITATIVE_MARKERS) {
  */
 export function parseQualitativeText(raw: string): ParsedQualitativeValue[] {
   const results: ParsedQualitativeValue[] = []
+  const seen = new Set<string>()
   const lines = raw.split(/\r?\n/)
 
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.length < 3) continue
 
-    // Try to parse this line as a qualitative result
-    const parsed = parseLine(trimmed)
-    if (parsed) {
+    // Strict pass (name : value), then a fuzzy pass that finds the marker and a
+    // status keyword anywhere on the line (covers free-text report phrasing).
+    const parsed = parseLine(trimmed) ?? parseLineFuzzy(trimmed)
+    if (parsed && !seen.has(parsed.markerId)) {
+      seen.add(parsed.markerId)
       results.push(parsed)
     }
   }
@@ -98,11 +162,20 @@ function parseLine(line: string): ParsedQualitativeValue | null {
     }
   }
 
-  // Normalize value for comparison
-  const normalizedValue = potentialValue.toLowerCase()
+  // Normalize value AND aliases the same way (lowercase, punctuation/hyphens ->
+  // spaces). This is essential: the report value "Non-reactive" can arrive here
+  // as "non reactive" (the '-' was treated as a separator), so a hyphenated
+  // alias like "non-reactive" must be compared on equal footing — otherwise a
+  // negative result slips through to the positive check.
+  const normalizedValue = canonical(potentialValue)
+  const matchesAny = (aliases: string[]) =>
+    aliases.some(a => {
+      const c = canonical(a)
+      return c.length > 0 && normalizedValue.includes(c)
+    })
 
   // Check trace aliases first (most specific)
-  if (marker.traceAliases.some(alias => normalizedValue.includes(alias.toLowerCase()))) {
+  if (matchesAny(marker.traceAliases)) {
     return {
       markerId: marker.id,
       rawName: parts[0].trim(),
@@ -113,7 +186,7 @@ function parseLine(line: string): ParsedQualitativeValue | null {
   }
 
   // Check borderline aliases
-  if (marker.borderlineAliases.some(alias => normalizedValue.includes(alias.toLowerCase()))) {
+  if (matchesAny(marker.borderlineAliases)) {
     return {
       markerId: marker.id,
       rawName: parts[0].trim(),
@@ -123,23 +196,26 @@ function parseLine(line: string): ParsedQualitativeValue | null {
     }
   }
 
-  // Check positive aliases
-  if (marker.positiveAliases.some(alias => normalizedValue.includes(alias.toLowerCase()))) {
+  // Check NEGATIVE aliases BEFORE positive. This is critical: "non-reactive"
+  // and "not detected" contain the substrings "reactive"/"detected", so if
+  // positive were checked first a negative result would be misread as POSITIVE
+  // — e.g. reporting Hepatitis C as present when it is absent.
+  if (matchesAny(marker.negativeAliases)) {
     return {
       markerId: marker.id,
       rawName: parts[0].trim(),
-      status: 'positive',
+      status: 'negative',
       rawValue: potentialValue,
       resultType: 'qualitative'
     }
   }
 
-  // Check negative aliases
-  if (marker.negativeAliases.some(alias => normalizedValue.includes(alias.toLowerCase()))) {
+  // Check positive aliases
+  if (matchesAny(marker.positiveAliases)) {
     return {
       markerId: marker.id,
       rawName: parts[0].trim(),
-      status: 'negative',
+      status: 'positive',
       rawValue: potentialValue,
       resultType: 'qualitative'
     }

@@ -139,8 +139,13 @@ function interpretMarker(parsed: ParsedValue, context: PatientContext): Analyzed
   }
   const status = computeStatus(value, range)
   const interpretation = INTERPRETATIONS[parsed.markerId]
+  // When a marker has no dedicated critical-high/-low text, fall back to the
+  // high/low text — NOT to "normal", which would contradict the status badge
+  // (e.g. showing "Critically high" alongside a "your value is normal" message).
   const explanation =
     interpretation?.[status] ??
+    (status === 'critical-high' ? interpretation?.['high'] : undefined) ??
+    (status === 'critical-low' ? interpretation?.['low'] : undefined) ??
     interpretation?.['normal'] ??
     'No interpretation available for this value.'
 
