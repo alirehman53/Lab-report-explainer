@@ -251,7 +251,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
 
   alp: {
     id: 'alp',
-    names: ['alp', 'alkaline phosphatase', 'alk phos', 'alkphos'],
+    names: ['alp', 'alkaline phosphatase', 'alk phos', 'alkphos', 'alkaline phospatase', 'alkaline phosphatse', 'serum alkaline phosphatase', 's. alkaline phosphatase', 'alk phosphatase'],
     displayName: 'ALP',
     fullName: 'Alkaline Phosphatase · Liver/bone enzyme',
     unit: 'U/L',
@@ -264,7 +264,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
 
   bilirubin_total: {
     id: 'bilirubin_total',
-    names: ['total bilirubin', 't. bilirubin', 'bilirubin total', 'tbil'],
+    names: ['total bilirubin', 't. bilirubin', 'bilirubin total', 'tbil', 'bilirubin', 'bilirubin t', 'bil t', 't bilirubin', 'serum bilirubin', 'bilirubin (total)', 'biliruin t', 'bilirubin t'],
     displayName: 'Total Bilirubin',
     fullName: 'Total Bilirubin · Bile pigment',
     unit: 'mg/dL',
@@ -277,7 +277,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
 
   bilirubin_direct: {
     id: 'bilirubin_direct',
-    names: ['direct bilirubin', 'd. bilirubin', 'bilirubin direct', 'dbil', 'conjugated bilirubin'],
+    names: ['direct bilirubin', 'd. bilirubin', 'bilirubin direct', 'dbil', 'conjugated bilirubin', 'bilirubin d', 'biliruin d', 'bil d', 'd bilirubin', 'bilirubin (direct)'],
     displayName: 'Direct Bilirubin',
     fullName: 'Direct Bilirubin · Conjugated bile pigment',
     unit: 'mg/dL',
@@ -428,7 +428,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
 
   cholesterol_total: {
     id: 'cholesterol_total',
-    names: ['total cholesterol', 'cholesterol', 'chol', 'tc'],
+    names: ['total cholesterol', 'cholesterol', 'chol', 'tc', 'cholestrol', 'total cholestrol', 'serum cholesterol', 's. cholesterol', 't. cholesterol', 't.cholesterol', 'cholesterel', 'cholesterol total'],
     displayName: 'Total Cholesterol',
     fullName: 'Total Cholesterol · Blood fat',
     unit: 'mg/dL',
@@ -481,7 +481,7 @@ export const LAB_MARKERS: Record<string, LabMarker> = {
 
   vldl: {
     id: 'vldl',
-    names: ['vldl', 'vldl cholesterol', 'vldl-c'],
+    names: ['vldl', 'vldl cholesterol', 'vldl-c', 'vlol', 'vidl'],
     displayName: 'VLDL',
     fullName: 'VLDL Cholesterol · Very low density lipoprotein',
     unit: 'mg/dL',

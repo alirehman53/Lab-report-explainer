@@ -267,11 +267,11 @@ export default function ResultsPage() {
 
       <main className={styles.main}>
 
-        {/* Source badge */}
+        {/* Source badge — "offline" is the reliable default path, not an error. */}
         <div className={`${styles.sourceBadge} ${styles[source]}`}>
           <span className={styles.dot} />
           {source === 'hybrid'  && 'AI-enhanced analysis'}
-          {source === 'offline' && 'Offline analysis · database-powered'}
+          {source === 'offline' && 'Instant analysis · medical database'}
           {source === 'ai'      && 'AI analysis'}
         </div>
 

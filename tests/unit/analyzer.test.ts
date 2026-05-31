@@ -58,3 +58,19 @@ test('does not correct a bounded value that is merely high but possible (Calcium
   const ca = analyze('Calcium 11 mg/dl').results.find(r => r.markerId === 'calcium')
   assert.equal(ca?.value, 11)
 })
+
+test('displays the unit exactly as printed on the report', () => {
+  // The report uses "mg%" and "mg/dl" — the result (and its reference range)
+  // should echo those, not silently swap in the canonical "mg/dL".
+  const gluc = analyze('Glucose 90 mg%').results.find(r => r.markerId === 'glucose_fasting')
+  assert.equal(gluc?.unit, 'mg%')
+  assert.match(gluc?.normalRange ?? '', /mg%/)
+
+  const ca = analyze('Calcium 9.7 mg/dl').results.find(r => r.markerId === 'calcium')
+  assert.equal(ca?.unit, 'mg/dl')
+})
+
+test('falls back to the canonical unit when the report did not print one', () => {
+  const hb = analyze('Hemoglobin 14').results.find(r => r.markerId === 'hemoglobin')
+  assert.equal(hb?.unit, 'g/dL')
+})

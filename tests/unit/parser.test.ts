@@ -53,6 +53,26 @@ test('reads multiple markers from a block faithfully', () => {
   assert.equal(valueFor(text, 'glucose_fasting'), 95)
 })
 
+test('matches common report misspellings / OCR variants of marker names', () => {
+  // Real labs (and OCR) misspell names — these must still be recognized so the
+  // value is not silently dropped (e.g. "Cholestrol 177" was being missed).
+  assert.equal(valueFor('Cholestrol 177 mg/dl', 'cholesterol_total'), 177)
+  assert.equal(valueFor('Alkaline Phospatase 88 IU/L', 'alp'), 88)
+  assert.equal(valueFor('VLOL 27 mg/dl', 'vldl'), 27)
+})
+
+test('distinguishes Bilirubin T (total) from Bilirubin D (direct)', () => {
+  assert.equal(valueFor('Bilirubin T 1.1 mg%', 'bilirubin_total'), 1.1)
+  assert.equal(valueFor('Biliruin D 0.2 mg%', 'bilirubin_direct'), 0.2)
+})
+
+test('does not confuse LDL with total cholesterol', () => {
+  const text = 'Cholestrol 177 mg/dl\nLDL 105 mg/dl\nHDL 47 mg/dl'
+  assert.equal(valueFor(text, 'cholesterol_total'), 177)
+  assert.equal(valueFor(text, 'ldl'), 105)
+  assert.equal(valueFor(text, 'hdl'), 47)
+})
+
 test('normalizeValue only does legitimate unit-scale conversion, never decimal guessing', () => {
   // Absolute WBC count -> ×10³/μL is a real, unambiguous conversion.
   assert.equal(normalizeValue(8500, '×10³/μL', 'wbc'), 8.5)

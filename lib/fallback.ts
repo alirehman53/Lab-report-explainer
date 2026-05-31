@@ -97,9 +97,11 @@ export async function analyzeReport(
       return offlineResult
     }
 
-    // Strip any accidental markdown fences
-    const cleaned = reply.replace(/```json|```/gi, '').trim()
-    const enrichment: AIEnrichment = JSON.parse(cleaned)
+    const enrichment = extractEnrichment(reply)
+    if (!enrichment) {
+      console.warn('[fallback] Could not parse AI response as enrichment JSON, returning offline result')
+      return offlineResult
+    }
 
     return mergeAIWithOffline(offlineResult, enrichment)
 
@@ -107,4 +109,51 @@ export async function analyzeReport(
     console.error('[fallback] AI enrichment failed, returning offline result:', err)
     return offlineResult
   }
+}
+
+/**
+ * Robustly extract the enrichment object from a model reply.
+ *
+ * Models often wrap JSON in prose or markdown fences, which made a naive
+ * JSON.parse() throw and silently drop the AI result. We strip fences and then
+ * parse the first balanced { ... } block. Returns null if nothing usable is
+ * found — the caller then keeps the (already correct) offline result.
+ *
+ * IMPORTANT: the AI only ever supplies EXPLANATION TEXT and extra questions.
+ * It never supplies values, ranges, or statuses — those come exclusively from
+ * the deterministic offline engine — so the AI cannot make a number wrong.
+ */
+function extractEnrichment(reply: string): AIEnrichment | null {
+  const stripped = reply.replace(/```json|```/gi, '').trim()
+  const start = stripped.indexOf('{')
+  const end = stripped.lastIndexOf('}')
+  if (start === -1 || end === -1 || end < start) return null
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stripped.slice(start, end + 1))
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object') return null
+
+  const obj = parsed as Record<string, unknown>
+  // Coerce defensively — accept whatever valid fields are present, ignore the rest.
+  const enrichedExplanations: Record<string, string> = {}
+  if (obj.enrichedExplanations && typeof obj.enrichedExplanations === 'object') {
+    for (const [k, v] of Object.entries(obj.enrichedExplanations as Record<string, unknown>)) {
+      if (typeof v === 'string' && v.trim()) enrichedExplanations[k] = v.trim()
+    }
+  }
+  const additionalQuestions = Array.isArray(obj.additionalQuestions)
+    ? (obj.additionalQuestions as unknown[]).filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
+    : []
+  const patternSummary = typeof obj.patternSummary === 'string' ? obj.patternSummary : ''
+
+  // Nothing usable → treat as no enrichment.
+  if (Object.keys(enrichedExplanations).length === 0 && additionalQuestions.length === 0 && !patternSummary) {
+    return null
+  }
+
+  return { enrichedExplanations, patternSummary, additionalQuestions }
 }

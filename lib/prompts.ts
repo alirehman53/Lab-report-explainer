@@ -12,7 +12,7 @@ export function buildLabPrompt(
   const patterns = offlineResult.detectedPatterns
 
   const markerSummary = numericResults
-    .map(r => `- ${r.displayName}: ${r.value} ${r.unit || ''} (${r.status || 'unknown'}, normal: ${r.normalRange || '—'})`)
+    .map(r => `- id="${r.markerId}" — ${r.displayName}: ${r.value} ${r.unit || ''} (${r.status || 'unknown'}, normal: ${r.normalRange || '—'})`)
     .join('\n')
 
   const patternSummary =
@@ -39,10 +39,10 @@ Your job:
 3. Suggest up to 2 additional doctor questions beyond the ones already generated, if relevant.
 4. Keep language warm, clear, and non-alarmist unless a value is critically abnormal.
 
-Respond ONLY with a valid JSON object in this exact format — no preamble, no markdown fences, no explanation outside the JSON:
+Respond ONLY with a valid JSON object in this exact format — no preamble, no markdown fences, no explanation outside the JSON. Use the EXACT id="..." value shown above as each key in enrichedExplanations:
 {
   "enrichedExplanations": {
-    "<markerId>": "<improved explanation string>"
+    "<exact id from the list above, e.g. glucose_fasting>": "<improved explanation string>"
   },
   "patternSummary": "<2-3 sentence plain summary of the overall picture, or empty string if nothing notable>",
   "additionalQuestions": ["<question 1>", "<question 2>"]

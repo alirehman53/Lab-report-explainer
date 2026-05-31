@@ -144,12 +144,19 @@ function interpretMarker(parsed: ParsedValue, context: PatientContext): Analyzed
     interpretation?.['normal'] ??
     'No interpretation available for this value.'
 
+  // Display the unit EXACTLY as it appeared on the patient's report (e.g.
+  // "mg/dl", "mg%", "mEq/l") so the result matches what they're looking at and
+  // doesn't confuse them. Fall back to the marker's canonical unit only when the
+  // report didn't print a unit we could capture. The reference range is shown
+  // with the same unit label for consistency.
+  const displayUnit = displayUnitFor(parsed.unit, marker.unit)
+
   // Surface a "verify this value" hint when we auto-corrected a decimal, or
   // when the validator suspects an OCR artifact we could not safely correct.
   const decimalSuggestion = validation.suggestions.find(s => /decimal/i.test(s))
   const flagged = autoCorrected || Boolean(decimalSuggestion)
   const flagReason = autoCorrected
-    ? `This looked like a misread decimal point (the report showed ${originalReading}); we read it as ${value} ${marker.unit}. Please confirm against your original report.`
+    ? `This looked like a misread decimal point (the report showed ${originalReading}); we read it as ${value} ${displayUnit}. Please confirm against your original report.`
     : decimalSuggestion
 
   return {
@@ -157,9 +164,9 @@ function interpretMarker(parsed: ParsedValue, context: PatientContext): Analyzed
     displayName:     marker.displayName,
     fullName:        marker.fullName,
     value,
-    unit:            marker.unit,
+    unit:            displayUnit,
     status,
-    normalRange:     formatRange(range, marker.unit),
+    normalRange:     formatRange(range, displayUnit),
     percentPosition: computePercentPosition(value, range),
     explanation,
     severity:        computeSeverity(status),
@@ -168,6 +175,18 @@ function interpretMarker(parsed: ParsedValue, context: PatientContext): Analyzed
     isDerived:       parsed.resultType === 'derived',
     ...(flagged ? { flagged: true, flagReason } : {}),
   }
+}
+
+/**
+ * Choose the unit label to display. We prefer the unit the report actually
+ * printed (so the user sees the familiar "mg/dl" etc.), but ignore captured
+ * "units" that are too long/garbled to be a real unit, and fall back to the
+ * marker's canonical unit when nothing usable was captured.
+ */
+function displayUnitFor(reportUnit: string | undefined, canonicalUnit: string): string {
+  const u = reportUnit?.trim()
+  if (u && u.length > 0 && u.length <= 12) return u
+  return canonicalUnit
 }
 
 function analyzeSingleQualitative(parsed: ParsedQualitativeValue): AnalyzedQualitativeResult | null {
