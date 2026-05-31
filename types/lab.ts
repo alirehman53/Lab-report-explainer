@@ -132,6 +132,12 @@ export interface AnalyzedResult {
   category: MarkerCategory
   resultType: 'numeric' | 'derived'
   isDerived?: boolean
+  // Set when the value passed validation but looks suspicious (e.g. a likely
+  // missing decimal point from OCR). The UI shows a "verify this value" hint so
+  // the user double-checks against the original report. The value is never
+  // altered — only flagged.
+  flagged?: boolean
+  flagReason?: string
 }
 
 export interface AnalyzedQualitativeResult {

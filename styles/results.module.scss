@@ -426,6 +426,27 @@
   line-height: 1.65;
 }
 
+// ── "Verify this value" flag (possible OCR misread) ───────────────────────
+.verifyFlag {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 12px;
+  padding: 9px 12px;
+  background: var(--color-amber-pale);
+  border: 1px solid rgba(239, 159, 39, 0.25);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-amber-dark);
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    stroke: var(--color-amber-dark);
+  }
+}
+
 // ── Doctor questions ──────────────────────────────────────────────────────
 
 .questionsCard {
@@ -594,4 +615,75 @@
   margin: 24px 0 10px;
 
   &:first-child { margin-top: 0; }
+}
+
+// ── Responsive: tablet ────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .nav {
+    padding: 14px 20px;
+  }
+
+  .main {
+    padding: 28px 18px 64px;
+  }
+}
+
+// ── Responsive: mobile ────────────────────────────────────────────────────
+@media (max-width: 540px) {
+  .nav {
+    padding: 12px 16px;
+  }
+
+  .logoText { font-size: 17px; }
+
+  .backBtn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .main {
+    padding: 22px 14px 56px;
+  }
+
+  // Keep marker name and value on the same row but let the name wrap and the
+  // value stay readable without overflowing on narrow screens.
+  .cardTop {
+    gap: 10px;
+  }
+
+  .resultCard,
+  .qualCard {
+    padding: 16px;
+  }
+
+  .value { font-size: 21px; }
+  .qualValue { font-size: 18px; }
+  .markerName { font-size: 14px; }
+
+  .questionsCard {
+    padding: 18px;
+  }
+
+  .questionsTitle { font-size: 17px; }
+
+  // The ad slot is a horizontal row on desktop; stack it on mobile so the
+  // CTA button never gets squeezed off-screen.
+  .adSlot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .adCta {
+    text-align: center;
+  }
+
+  .summaryStrip {
+    gap: 8px;
+  }
+
+  .summaryPill {
+    padding: 6px 11px;
+    font-size: 12px;
+  }
 }

@@ -16,8 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'
+const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Lab Lens — AI-Powered Medical Report Analyzer | Instant Lab Results Interpretation",
     template: '%s | Lab Lens'
@@ -87,10 +90,12 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'google-site-verification-code',
-    yandex: 'yandex-verification-code',
-  },
+  // Only emit a verification meta tag when a real token is configured via env.
+  // Emitting a placeholder string produces an invalid tag that can confuse
+  // Search Console verification.
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
   alternates: {
     canonical: '/',
   },
@@ -104,23 +109,23 @@ export default function RootLayout({
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'MedicalWebPage',
-    '@id': 'https://lablens.com',
+    '@id': SITE_URL,
     name: 'Lab Lens',
-    url: 'https://lablens.com',
+    url: SITE_URL,
     description: 'AI-powered medical report analyzer for instant lab results interpretation',
     publisher: {
       '@type': 'Organization',
       name: 'Lab Lens',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://lablens.com/logo.png',
+        url: `${SITE_URL}/logo.png`,
         width: 600,
         height: 60
       }
     },
     potentialAction: {
       '@type': 'AnalyzeAction',
-      target: 'https://lablens.com',
+      target: SITE_URL,
       object: {
         '@type': 'MedicalTest',
         name: 'Lab Report'

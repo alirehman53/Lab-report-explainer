@@ -44,5 +44,22 @@ export function resolveRange(
     return marker.ranges.universal
   }
 
+  // Gender is unknown (or the requested sex has no specific range) but the
+  // marker only defines sex-specific ranges. Rather than DROP the marker
+  // entirely (which would hide common results like Hemoglobin for anyone who
+  // doesn't specify their sex), synthesize a combined range that spans both
+  // sexes. This is intentionally lenient so we never wrongly flag a value when
+  // sex is unknown.
+  const { male, female } = marker.ranges
+  if (male || female) {
+    const sets = [male, female].filter((r): r is RangeSet => Boolean(r))
+    return {
+      low:          Math.min(...sets.map(r => r.low)),
+      high:         Math.max(...sets.map(r => r.high)),
+      criticalLow:  Math.min(...sets.map(r => r.criticalLow)),
+      criticalHigh: Math.max(...sets.map(r => r.criticalHigh)),
+    }
+  }
+
   return null
 }

@@ -18,12 +18,59 @@ import { buildDoctorQuestions } from '@/data/questions'
 import { normalizeValue } from '@/lib/parser'
 import { resolveRange } from '@/lib/age-resolver'
 import { computeDerivedMarkers } from '@/lib/calculator'
+import { validateLabValue } from '@/lib/validator'
 
 function getRange(markerId: string, context: PatientContext): RangeSet | null {
   const marker = LAB_MARKERS[markerId]
   if (!marker) return null
 
   return resolveRange(marker, context)
+}
+
+/**
+ * Markers that the body regulates within a narrow physiological band, where a
+ * value an order of magnitude above normal is biologically impossible (it would
+ * be incompatible with life or simply cannot occur). For ONLY these markers we
+ * may safely repair a dropped decimal point from OCR.
+ *
+ * Markers NOT in this set (WBC, platelets, glucose, liver enzymes, ferritin,
+ * D-dimer, tumor markers, troponin, etc.) can legitimately be many times the
+ * upper limit — a high WBC may be leukemia, a high glucose may be a crisis — so
+ * we must NEVER auto-rescale those.
+ */
+const DECIMAL_BOUNDED_MARKERS = new Set<string>([
+  'sodium', 'potassium', 'chloride', 'bicarbonate',
+  'calcium', 'magnesium', 'phosphorus',
+  'albumin', 'total_protein', 'globulin',
+  'hemoglobin', 'mchc',
+])
+
+/**
+ * Attempt to repair a dropped decimal point for a tightly-bounded marker.
+ *
+ * Only fires when the value is BEYOND the critical-high bound (so it cannot be a
+ * real reading) AND dividing by 10 or 100 lands it squarely inside the NORMAL
+ * range. A genuine critical value divided by 10/100 falls far BELOW normal, so
+ * it will never be "corrected" — this is what makes the repair safe.
+ *
+ * Returns the corrected value and the factor used, or null if no safe repair
+ * applies (in which case the value is left exactly as read).
+ */
+function repairDroppedDecimal(
+  markerId: string,
+  value: number,
+  range: RangeSet
+): { value: number; factor: number } | null {
+  if (!DECIMAL_BOUNDED_MARKERS.has(markerId)) return null
+  if (value <= range.criticalHigh) return null // plausibly real — never touch
+
+  for (const factor of [10, 100]) {
+    const candidate = value / factor
+    if (candidate >= range.low && candidate <= range.high) {
+      return { value: candidate, factor }
+    }
+  }
+  return null
 }
 
 function computeStatus(value: number, range: RangeSet): MarkerStatus {
@@ -61,13 +108,49 @@ function interpretMarker(parsed: ParsedValue, context: PatientContext): Analyzed
   if (!range) return null
 
   if (typeof parsed.value !== 'number' || isNaN(parsed.value)) return null
-  const value = normalizeValue(parsed.value, parsed.unit, parsed.markerId)
+
+  // Read the value, applying legitimate unit-scale conversions (e.g. an
+  // absolute WBC count -> ×10³/μL).
+  let value = normalizeValue(parsed.value, parsed.unit, parsed.markerId)
+  if (isNaN(value)) return null
+
+  // Safe, bounded decimal repair: for tightly-regulated analytes only, fix a
+  // value that is biologically impossible but becomes normal when a dropped
+  // decimal point is restored (e.g. Calcium "97" -> 9.7, Potassium "430" ->
+  // 4.30). Flagged so the user still verifies. See repairDroppedDecimal.
+  let autoCorrected = false
+  let originalReading = value
+  const repair = repairDroppedDecimal(parsed.markerId, value, range)
+  if (repair) {
+    console.log(`[Analyzer] Repaired likely OCR decimal error for ${parsed.markerId}: ${value} -> ${repair.value}`)
+    originalReading = value
+    value = repair.value
+    autoCorrected = true
+  }
+
+  // Validate only as a sanity gate against physically impossible OCR garbage
+  // (e.g. a value 10× beyond the critical bound). This never rescales the
+  // value; it only flags. Context gives age/sex-correct reference ranges.
+  const validation = validateLabValue(parsed.markerId, value, parsed.unit, context)
+  if (!validation.isValid && validation.confidence === 0) {
+    console.log(`[Analyzer] Skipping physically impossible value for ${parsed.markerId}: ${value}`)
+    validation.issues.forEach(issue => console.log(`  - ${issue}`))
+    return null
+  }
   const status = computeStatus(value, range)
   const interpretation = INTERPRETATIONS[parsed.markerId]
   const explanation =
     interpretation?.[status] ??
     interpretation?.['normal'] ??
     'No interpretation available for this value.'
+
+  // Surface a "verify this value" hint when we auto-corrected a decimal, or
+  // when the validator suspects an OCR artifact we could not safely correct.
+  const decimalSuggestion = validation.suggestions.find(s => /decimal/i.test(s))
+  const flagged = autoCorrected || Boolean(decimalSuggestion)
+  const flagReason = autoCorrected
+    ? `This looked like a misread decimal point (the report showed ${originalReading}); we read it as ${value} ${marker.unit}. Please confirm against your original report.`
+    : decimalSuggestion
 
   return {
     markerId:        parsed.markerId,
@@ -83,6 +166,7 @@ function interpretMarker(parsed: ParsedValue, context: PatientContext): Analyzed
     category:        marker.category,
     resultType:      parsed.resultType || 'numeric',
     isDerived:       parsed.resultType === 'derived',
+    ...(flagged ? { flagged: true, flagReason } : {}),
   }
 }
 

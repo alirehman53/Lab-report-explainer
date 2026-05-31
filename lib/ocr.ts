@@ -1,7 +1,17 @@
 /**
- * Multi-strategy OCR with fallback chain:
- * 1. AI Vision Model (Transformers.js) - Primary, works everywhere
- * 2. System Tesseract CLI - Fallback for Docker/Railway deployments
+ * Multi-strategy OCR with a decimal-safe pipeline.
+ *
+ * Engine priority:
+ *   1. System Tesseract CLI  — PRIMARY. A full-page/table OCR engine. Configured
+ *      with page-segmentation mode 6 (uniform block) and preserved interword
+ *      spaces so columns and decimal points in lab tables survive.
+ *   2. AI Vision (TrOCR via Transformers.js) — LAST RESORT only. TrOCR is a
+ *      single-LINE recognition model; it is not suitable for full documents and
+ *      is used only when Tesseract is unavailable (e.g. some serverless hosts).
+ *
+ * The image is always upscaled first (see imagePreprocessor) so that small
+ * glyphs — most importantly the decimal point — are several pixels wide and are
+ * not lost. This is what fixes "4.30" being read as "430".
  */
 
 import path from 'path'
@@ -10,6 +20,8 @@ import os from 'os'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { ocrWithVision } from './ocrVision'
+import { cleanOcrText } from './ocr-cleaner'
+import { preprocessLabReport, analyzeImageQuality } from './imagePreprocessor'
 
 const execFileAsync = promisify(execFile)
 
@@ -17,81 +29,118 @@ const execFileAsync = promisify(execFile)
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined
 const isServerless = isVercel || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined
 
-export async function ocrBuffer(buffer: ArrayBuffer): Promise<string> {
-  // First, ensure the buffer is a valid image format by converting with Sharp
-  // This handles compressed PDF images (JPEG, etc.) and converts to PNG
-  let processedBuffer: ArrayBuffer
+/**
+ * Locate the tesseract executable. Checks the Windows default install path,
+ * then falls back to whatever is on PATH. Returns null if it cannot be found.
+ */
+async function findTesseract(): Promise<string | null> {
+  const candidates = [
+    'C:\\Program Files\\Tesseract-OCR\\tesseract.exe',
+    'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe',
+  ]
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate)
+      return candidate
+    } catch {
+      // keep looking
+    }
+  }
+  // Fall back to PATH — verify it actually runs.
   try {
-    const sharp = (await import('sharp')).default
-    const pngBuffer = await sharp(Buffer.from(buffer))
-      .png()
-      .toBuffer()
-    const arrayBuffer = pngBuffer.buffer as ArrayBuffer
-    processedBuffer = arrayBuffer.slice(pngBuffer.byteOffset, pngBuffer.byteOffset + pngBuffer.byteLength)
-    console.log('[OCR] Converted image to PNG format, size:', processedBuffer.byteLength)
+    await execFileAsync('tesseract', ['--version'], { timeout: 10_000 })
+    return 'tesseract'
+  } catch {
+    return null
+  }
+}
+
+async function runTesseract(
+  tesseractCmd: string,
+  pngBuffer: Buffer
+): Promise<string> {
+  const tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-'))
+  const pngPath = path.join(tmpdir, 'img.png')
+  try {
+    await fs.writeFile(pngPath, pngBuffer)
+    const args = [
+      pngPath,
+      'stdout',
+      '-l', 'eng',
+      '--oem', '1', // LSTM engine — best accuracy for printed text
+      '--psm', '6', // assume a uniform block of text (lab tables)
+      '-c', 'preserve_interword_spaces=1', // keep column spacing intact
+    ]
+    const execOpts = { encoding: 'utf8' as const, maxBuffer: 20 * 1024 * 1024, timeout: 60_000 }
+    const { stdout } = await execFileAsync(tesseractCmd, args, execOpts)
+    return String(stdout ?? '')
+  } finally {
+    try { await fs.rm(tmpdir, { recursive: true, force: true }) } catch { /* noop */ }
+  }
+}
+
+export async function ocrBuffer(buffer: ArrayBuffer): Promise<string> {
+  // Always upscale + gently enhance the image before OCR. Upscaling is what
+  // keeps the decimal point intact, so we apply it unconditionally rather than
+  // only when the quality heuristic asks for it.
+  let pngBuffer: Buffer
+  try {
+    const inputBuffer = Buffer.from(buffer)
+
+    try {
+      const analysis = await analyzeImageQuality(inputBuffer)
+      console.log('[OCR] Image quality analysis:', analysis.quality)
+    } catch { /* analysis is best-effort */ }
+
+    console.log('[OCR] Applying decimal-safe preprocessing...')
+    pngBuffer = await preprocessLabReport(inputBuffer)
+    console.log('[OCR] Preprocessing complete, size:', pngBuffer.byteLength)
   } catch (conversionErr) {
-    console.warn('[OCR] Image conversion failed, using original buffer:', conversionErr)
-    processedBuffer = buffer
+    console.warn('[OCR] Preprocessing failed, using original buffer:', conversionErr)
+    pngBuffer = Buffer.from(buffer)
   }
 
-  // Priority 1: Try AI vision model (Transformers.js - runs locally, no API calls)
-  // This is the primary method - works everywhere and uses AI model
-  try {
-    console.log('[OCR] Trying AI vision model (Transformers.js)...')
-    const text = await ocrWithVision(processedBuffer)
-    if (text && text.length > 5) {
-      console.log('[OCR] AI vision model succeeded, text length:', text.length)
-      return text
+  // Priority 1: System Tesseract CLI (the real document OCR engine).
+  const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+  if (isNode && !isServerless) {
+    try {
+      const tesseractCmd = await findTesseract()
+      if (tesseractCmd) {
+        console.log('[OCR] Using tesseract:', tesseractCmd)
+        const rawText = await runTesseract(tesseractCmd, pngBuffer)
+        if (rawText && rawText.trim().length > 5) {
+          console.log('[OCR] Tesseract succeeded, raw length:', rawText.length)
+          const cleanedText = cleanOcrText(rawText)
+          console.log('[OCR] Cleaned length:', cleanedText.length)
+          return cleanedText
+        }
+        console.log('[OCR] Tesseract returned empty/short text, trying fallback...')
+      } else {
+        console.log('[OCR] Tesseract not installed, trying AI vision fallback...')
+      }
+    } catch (cliErr) {
+      console.warn('[OCR] Tesseract failed:', cliErr)
     }
-    console.log('[OCR] Vision model returned empty/short text, trying fallback...')
+  }
+
+  // Priority 2 (last resort): AI vision model. Note: TrOCR is a single-line
+  // model and is poor at full pages — this exists only so serverless hosts
+  // without tesseract still return *something*.
+  try {
+    console.log('[OCR] Trying AI vision model (Transformers.js, last resort)...')
+    const arrayBuffer = pngBuffer.buffer.slice(
+      pngBuffer.byteOffset,
+      pngBuffer.byteOffset + pngBuffer.byteLength
+    ) as ArrayBuffer
+    const rawText = await ocrWithVision(arrayBuffer)
+    if (rawText && rawText.length > 5) {
+      console.log('[OCR] AI vision model returned text length:', rawText.length)
+      return cleanOcrText(rawText)
+    }
   } catch (visionErr) {
     console.warn('[OCR] Vision model failed:', visionErr)
   }
 
-  // Priority 2: Try system tesseract CLI (best for full document OCR)
-  // Only attempt if we're in Node.js and not on serverless platform
-  const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
-  if (isNode && !isServerless) {
-    try {
-      console.log('[OCR] Trying system tesseract CLI...')
-      
-      // Find tesseract executable (check Windows default location first)
-      let tesseractCmd = 'tesseract'
-      const windowsTesseract = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-      try {
-        await fs.access(windowsTesseract)
-        tesseractCmd = windowsTesseract
-        console.log('[OCR] Using Windows tesseract at:', windowsTesseract)
-      } catch (_) {
-        // Use 'tesseract' from PATH
-        console.log('[OCR] Using tesseract from PATH')
-      }
-      
-      const tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-'))
-      const imgPath = path.join(tmpdir, 'img')
-      const pngPath = imgPath + '.png'
-      await fs.writeFile(pngPath, Buffer.from(processedBuffer))
-      const execOpts = { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, timeout: 60_000 }
-      try {
-        const { stdout } = await execFileAsync(tesseractCmd, [pngPath, 'stdout', '-l', 'eng'], execOpts)
-        const text = String(stdout ?? '')
-        console.log('[OCR] System tesseract CLI succeeded, text length:', text.length)
-        return text
-      } finally {
-        try { await fs.rm(tmpdir, { recursive: true, force: true }) } catch (_) {}
-      }
-    } catch (cliErr) {
-      if ((cliErr as any)?.code === 'ENOENT') {
-        console.log('[OCR] System tesseract CLI not found (not installed)')
-      } else {
-        console.warn('[OCR] System tesseract CLI failed:', cliErr)
-      }
-    }
-  }
-
-  // All methods failed - return empty string
-  // Note: We removed tesseract.js fallback because it has fetch() issues in Node.js
-  // The AI vision model (Priority 1) should handle most cases
   console.error('[OCR] All OCR methods failed')
   return ''
 }

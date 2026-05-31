@@ -24,11 +24,12 @@ export async function generateStaticParams() {
   }))
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const filePath = path.join(process.cwd(), 'data', 'blogs.json')
   const fileContent = fs.readFileSync(filePath, 'utf8')
   const posts: BlogPost[] = JSON.parse(fileContent)
-  const post = posts.find((p) => p.slug === params.slug)
+  const post = posts.find((p) => p.slug === slug)
 
   if (!post) {
     return {
@@ -63,7 +64,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: post.summary,
     },
     alternates: {
-      canonical: `/blog/${params.slug}`,
+      canonical: `/blog/${slug}`,
     },
     robots: {
       index: true,
@@ -75,11 +76,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const filePath = path.join(process.cwd(), 'data', 'blogs.json')
   const fileContent = fs.readFileSync(filePath, 'utf8')
   const posts: BlogPost[] = JSON.parse(fileContent)
-  const post = posts.find((p) => p.slug === params.slug)
+  const post = posts.find((p) => p.slug === slug)
 
   if (!post) {
     notFound()
@@ -90,7 +92,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const readTime = Math.ceil(wordCount / 200)
 
   // Get related posts (next 2 posts)
-  const currentIndex = posts.findIndex(p => p.slug === params.slug)
+  const currentIndex = posts.findIndex(p => p.slug === slug)
   const relatedPosts = posts.filter((_, index) => index !== currentIndex).slice(0, 2)
 
   const structuredData = {
@@ -114,7 +116,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://yourdomain.com/blog/${params.slug}`
+      '@id': `${process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'}/blog/${slug}`
     },
     wordCount: wordCount,
     timeRequired: `PT${readTime}M`,

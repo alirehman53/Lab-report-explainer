@@ -327,4 +327,217 @@ export const INTERPRETATIONS: Record<string, InterpretationMap> = {
     normal:         "Your B12 is in a healthy range.",
     high:           "Elevated B12 is usually harmless from supplementation, but very high levels without supplementation can sometimes indicate liver disease or certain blood disorders.",
   },
+
+  // ── Thyroid (extended) ──
+  free_t3: {
+    low:    "Your Free T3 is low. T3 is the active thyroid hormone; a low level often goes alongside an underactive thyroid (hypothyroidism) and can cause tiredness, weight gain, and feeling cold.",
+    normal: "Your Free T3 is in a healthy range — your thyroid is producing an appropriate amount of active hormone.",
+    high:   "Your Free T3 is elevated, which can point to an overactive thyroid (hyperthyroidism) — symptoms include palpitations, weight loss, and anxiety. Worth discussing with your doctor.",
+  },
+  free_t4: {
+    low:    "Your Free T4 is low, which suggests the thyroid may be underactive (hypothyroidism). This is usually interpreted together with your TSH.",
+    normal: "Your Free T4 is in a healthy range.",
+    high:   "Your Free T4 is high, which can indicate an overactive thyroid. Your doctor will look at this alongside TSH and your symptoms.",
+  },
+  anti_tpo: {
+    normal: "Your Anti-TPO antibodies are within normal limits, making autoimmune thyroid disease less likely.",
+    high:   "Your Anti-TPO antibodies are raised. This points to autoimmune thyroid disease (such as Hashimoto's). It does not by itself mean your thyroid is malfunctioning — it's a marker your doctor uses alongside TSH and T4.",
+  },
+
+  // ── Liver (extended) ──
+  ggt: {
+    normal: "Your GGT is normal — a reassuring sign for your liver and bile ducts.",
+    high:   "Your GGT is elevated. GGT rises with alcohol use, fatty liver, bile-duct issues, and some medications. A raised GGT alongside a raised ALP usually points to the bile system.",
+    'critical-high': "Your GGT is very high, which warrants prompt evaluation of your liver and bile ducts.",
+  },
+  ldh: {
+    normal: "Your LDH is normal. LDH is a general marker released when tissues are stressed or damaged.",
+    high:   "Your LDH is elevated. This is non-specific — it can rise with many conditions including infections, anemia, muscle injury, or inflammation. Your doctor will interpret it in context.",
+    'critical-high': "Your LDH is markedly elevated and should be evaluated promptly in the context of your other results.",
+  },
+  globulin: {
+    low:    "Your globulin is low, which can occur with certain immune or kidney conditions. It's usually interpreted alongside your albumin.",
+    normal: "Your globulin is in a healthy range — your antibody and transport proteins are balanced.",
+    high:   "Your globulin is elevated, which can occur with chronic infection, inflammation, liver disease, or immune conditions.",
+  },
+
+  // ── Pancreatic ──
+  amylase: {
+    normal: "Your amylase is normal — no current sign of pancreatic irritation by this marker.",
+    high:   "Your amylase is elevated. This can reflect inflammation of the pancreas (pancreatitis) or salivary glands. It's usually checked together with lipase.",
+    'critical-high': "Your amylase is very high, which can indicate acute pancreatitis — please seek medical evaluation promptly.",
+  },
+  lipase: {
+    normal: "Your lipase is normal, which is reassuring for the pancreas.",
+    high:   "Your lipase is elevated. Lipase is more specific to the pancreas than amylase, and a high level can indicate pancreatitis.",
+    'critical-high': "Your lipase is very high — this strongly suggests acute pancreatitis and needs prompt medical attention.",
+  },
+
+  // ── Cardiac markers ──
+  troponin_i: {
+    normal: "Your Troponin I is normal — a reassuring result, as troponin rises when heart muscle is injured.",
+    high:   "Your Troponin I is elevated. Troponin is released when heart muscle is stressed or damaged. Even mild elevations should be discussed with a doctor.",
+    'critical-high': "Your Troponin I is critically high. This can indicate a heart attack or significant heart-muscle injury and needs EMERGENCY medical attention.",
+  },
+  ck: {
+    normal: "Your CK (creatine kinase) is normal.",
+    high:   "Your CK is elevated. CK rises with muscle activity or injury — strenuous exercise, injections, certain medications (like statins), or muscle conditions. Heart and skeletal muscle both contribute.",
+    'critical-high': "Your CK is very high, which can indicate significant muscle breakdown and should be evaluated promptly.",
+  },
+  ck_mb: {
+    normal: "Your CK-MB is normal — this fraction is more specific to heart muscle.",
+    high:   "Your CK-MB is elevated, which can indicate heart-muscle injury. It's interpreted alongside troponin and your symptoms.",
+    'critical-high': "Your CK-MB is markedly elevated — please seek prompt cardiac evaluation.",
+  },
+  bnp: {
+    normal: "Your BNP is normal, which makes significant heart failure less likely.",
+    high:   "Your BNP is elevated. BNP rises when the heart is under strain, as in heart failure. Your doctor will interpret it with your symptoms and an echocardiogram if needed.",
+    'critical-high': "Your BNP is very high, suggesting significant cardiac strain — please seek medical evaluation.",
+  },
+  nt_probnp: {
+    normal: "Your NT-proBNP is normal, making significant heart failure unlikely.",
+    high:   "Your NT-proBNP is elevated, which suggests the heart is under strain. This is a key marker in diagnosing and monitoring heart failure.",
+    'critical-high': "Your NT-proBNP is very high — please seek prompt cardiac evaluation.",
+  },
+  homocysteine: {
+    normal: "Your homocysteine is normal.",
+    high:   "Your homocysteine is elevated. High levels are linked to an increased risk of cardiovascular disease and clots, and can reflect low folate, B12, or B6. It's often treatable with vitamins.",
+  },
+
+  // ── Coagulation ──
+  pt: {
+    normal: "Your Prothrombin Time (PT) is normal — your blood is clotting in the expected time.",
+    high:   "Your PT is prolonged, meaning blood is taking longer to clot. This can be due to blood thinners (like warfarin), liver issues, or vitamin K deficiency.",
+    'critical-high': "Your PT is markedly prolonged, which raises bleeding risk and needs prompt review — especially if you take a blood thinner.",
+  },
+  inr: {
+    low:    "Your INR is on the lower side. If you take warfarin, this may mean you're under-anticoagulated (higher clot risk); if you don't, it's usually not a concern.",
+    normal: "Your INR is in the normal range (around 1.0). If you're not on a blood thinner, this is expected.",
+    high:   "Your INR is elevated. If you take warfarin, this means your blood is thinner than baseline — your target depends on why you take it (commonly 2.0–3.0). A high INR raises bleeding risk.",
+    'critical-high': "Your INR is critically high, which significantly raises bleeding risk. If you take warfarin, contact your doctor promptly.",
+  },
+  aptt: {
+    normal: "Your aPTT is normal — this part of your clotting system is working as expected.",
+    high:   "Your aPTT is prolonged, meaning this clotting pathway takes longer than usual. Causes include heparin, clotting-factor deficiencies, or certain antibodies.",
+    'critical-high': "Your aPTT is markedly prolonged and should be evaluated promptly for bleeding risk.",
+  },
+  d_dimer: {
+    normal: "Your D-Dimer is normal, which makes an active blood clot unlikely.",
+    high:   "Your D-Dimer is elevated. This is non-specific — it rises with clots but also with infection, inflammation, pregnancy, recent surgery, and age. A raised D-Dimer usually prompts further imaging rather than being diagnostic on its own.",
+  },
+  fibrinogen: {
+    low:    "Your fibrinogen is low, which can impair clotting and raise bleeding risk. It can occur with severe liver disease or consumption of clotting factors.",
+    normal: "Your fibrinogen is normal.",
+    high:   "Your fibrinogen is elevated. As an inflammatory protein, it often rises with infection, inflammation, or pregnancy.",
+  },
+
+  // ── Female hormones ──
+  fsh: {
+    low:    "Your FSH is low. In the context of fertility, low FSH can relate to signaling from the brain/pituitary. Interpretation depends heavily on your cycle phase and clinical picture.",
+    normal: "Your FSH is within the typical reproductive-age range. FSH varies across the menstrual cycle, so your doctor interprets it alongside the cycle day.",
+    high:   "Your FSH is elevated. In women, a high FSH can indicate reduced ovarian reserve or menopause; it's interpreted with LH, estradiol, and your age.",
+  },
+  lh: {
+    low:    "Your LH is low, which is interpreted in the context of your cycle and other hormones.",
+    normal: "Your LH is within the typical reproductive-age range. LH surges mid-cycle, so timing matters for interpretation.",
+    high:   "Your LH is elevated. A high LH (especially with a raised LH:FSH ratio) can be seen in PCOS, or it can indicate menopause depending on age and other hormones.",
+  },
+  estradiol: {
+    low:    "Your estradiol (E2) is low. Low levels are normal after menopause; in younger women they're interpreted with FSH/LH and cycle phase.",
+    normal: "Your estradiol is within a typical range — though normal varies a lot by cycle phase.",
+    high:   "Your estradiol is elevated, which can be normal around ovulation or with certain treatments; your doctor interprets it in context.",
+  },
+  progesterone: {
+    low:    "Your progesterone is low. A low mid-luteal progesterone can suggest a cycle without ovulation; timing relative to your cycle is key.",
+    normal: "Your progesterone is within an expected range for the cycle phase tested.",
+    high:   "Your progesterone is elevated, which is normal in the luteal phase and pregnancy.",
+  },
+  prolactin: {
+    normal: "Your prolactin is in a healthy range.",
+    high:   "Your prolactin is elevated. Mild rises can come from stress, recent breast exam, or medications; persistent elevation can cause irregular periods or milk production and is sometimes due to a small, benign pituitary growth. Often it should be rechecked under calm, fasting conditions.",
+  },
+  amh: {
+    low:    "Your AMH is low, which suggests a reduced ovarian reserve (fewer remaining eggs). This is one piece of the fertility picture and is best interpreted with your age and an ultrasound.",
+    normal: "Your AMH is in a typical range, suggesting a normal ovarian reserve for many women.",
+    high:   "Your AMH is high, which can be seen in PCOS. It's interpreted alongside your symptoms and ultrasound.",
+  },
+  beta_hcg: {
+    normal: "Your Beta-hCG is in the non-pregnant range.",
+    high:   "Your Beta-hCG is elevated. In the right context this most commonly indicates pregnancy; levels are tracked over time. Rarely, elevation has other causes your doctor will consider.",
+  },
+
+  // ── Male hormones ──
+  testosterone_total: {
+    low:    "Your total testosterone is low. In men this can cause low energy, reduced libido, and mood changes; it should be confirmed on a morning sample. In women, levels are naturally much lower.",
+    normal: "Your total testosterone is within the expected range for your sex.",
+    high:   "Your total testosterone is elevated. In women this can relate to PCOS or other hormone conditions; in men it's interpreted with the clinical picture.",
+  },
+  free_testosterone: {
+    low:    "Your free testosterone (the active, unbound fraction) is low, which can contribute to low-testosterone symptoms even when total testosterone looks borderline.",
+    normal: "Your free testosterone is within a typical range.",
+    high:   "Your free testosterone is elevated and is interpreted alongside total testosterone and your symptoms.",
+  },
+  dhea_s: {
+    low:    "Your DHEA-S is low, which can occur with adrenal under-activity. It's interpreted with your other hormones.",
+    normal: "Your DHEA-S is in a typical range.",
+    high:   "Your DHEA-S is elevated. This adrenal androgen can be raised in PCOS or, less commonly, adrenal conditions.",
+  },
+
+  // ── Adrenal ──
+  cortisol_morning: {
+    low:    "Your morning cortisol is low. Cortisol is your stress hormone and should be highest in the morning; a low value can suggest adrenal under-activity and may need further testing.",
+    normal: "Your morning cortisol is in the expected range for a morning sample.",
+    high:   "Your morning cortisol is elevated. This can result from stress, illness, or steroid medication; persistent elevation is occasionally due to an adrenal or pituitary condition.",
+  },
+
+  // ── Bone & minerals ──
+  pth: {
+    low:    "Your PTH is low. PTH controls calcium; a low level is interpreted together with your calcium result.",
+    normal: "Your PTH is in a healthy range, suggesting balanced calcium regulation.",
+    high:   "Your PTH is elevated. This often accompanies low vitamin D or kidney issues (the body's attempt to keep calcium up), or less commonly a parathyroid gland problem. It's read together with calcium and vitamin D.",
+  },
+  phosphorus: {
+    low:    "Your phosphorus is low, which can result from poor intake, vitamin D deficiency, or certain hormonal conditions.",
+    normal: "Your phosphorus is in a healthy range — important for bones and energy.",
+    high:   "Your phosphorus is elevated. This is most commonly related to reduced kidney function and is interpreted with your calcium and kidney results.",
+    'critical-high': "Your phosphorus is very high, which is most often linked to significant kidney impairment and should be reviewed promptly.",
+  },
+
+  // ── Vitamins ──
+  folate: {
+    'critical-low': "Your folate is critically low, which can cause megaloblastic anemia. Supplementation is usually needed, and B12 should be checked too.",
+    low:            "Your folate (vitamin B9) is low. Deficiency causes fatigue and a type of anemia, and is important to correct — especially in pregnancy, where folate protects the baby's development.",
+    normal:         "Your folate is in a healthy range.",
+    high:           "Elevated folate is generally harmless and usually reflects supplementation.",
+  },
+
+  // ── Diabetes (extended) ──
+  insulin_fasting: {
+    low:    "Your fasting insulin is low. In a non-diabetic this is usually not a concern; in diabetes it can reflect reduced insulin production.",
+    normal: "Your fasting insulin is in a healthy range.",
+    high:   "Your fasting insulin is elevated, which often signals insulin resistance — the body producing extra insulin to keep glucose normal. This is common before type 2 diabetes and is interpreted alongside glucose (and HOMA-IR).",
+  },
+
+  // ── Kidney (extended) ──
+  cystatin_c: {
+    normal: "Your Cystatin C is normal, suggesting good kidney filtration.",
+    high:   "Your Cystatin C is elevated, which suggests reduced kidney filtration. It's a sensitive kidney marker, sometimes used alongside creatinine and eGFR.",
+  },
+  microalbumin: {
+    normal: "Your urine microalbumin is normal — no sign of early kidney leak of protein.",
+    high:   "Your urine microalbumin is elevated (microalbuminuria). This can be the earliest sign of kidney stress, especially in diabetes or high blood pressure, and is important because it's often reversible when caught early.",
+  },
+
+  // ── Inflammation (extended) ──
+  procalcitonin: {
+    normal: "Your procalcitonin is normal, which makes a serious bacterial infection less likely.",
+    high:   "Your procalcitonin is elevated. This marker rises particularly with bacterial infections and sepsis, and helps doctors decide on antibiotics.",
+    'critical-high': "Your procalcitonin is very high, which can indicate severe bacterial infection or sepsis — please seek urgent medical care.",
+  },
+
+  // ── Lipid (extended) ──
+  lipoprotein_a: {
+    normal: "Your Lipoprotein(a) is in the desirable range.",
+    high:   "Your Lipoprotein(a) is elevated. This is a largely genetic, independent risk factor for heart disease. While it's hard to change with lifestyle, knowing it helps your doctor manage your overall cardiovascular risk more aggressively.",
+  },
 }

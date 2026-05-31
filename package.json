@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --import ./tests/helpers/register.mjs --test \"tests/unit/*.test.ts\"",
+    "test:unit": "node --import ./tests/helpers/register.mjs --test \"tests/unit/*.test.ts\"",
+    "test:e2e": "node --import ./tests/helpers/register.mjs --test \"tests/e2e/*.test.ts\"",
+    "test:all": "node --import ./tests/helpers/register.mjs --test \"tests/unit/*.test.ts\" \"tests/e2e/*.test.ts\"",
     "deploy:vercel": "vercel --prod",
     "setup:vercel": "node -e \"console.log('Run: .\\\\scripts\\\\setup-vercel.ps1 (Windows) or bash scripts/setup-vercel.sh (Linux/Mac)')\""
   },

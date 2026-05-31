@@ -63,6 +63,10 @@
   display:     flex;
   align-items: center;
   gap:         12px;
+
+  @media (max-width: 500px) {
+    gap: 8px;
+  }
 }
 
 .navBadge {
@@ -73,6 +77,12 @@
   border-radius: 20px;
   padding:       4px 12px;
   font-weight:   500;
+
+  // The "Free · No signup" badge is the lowest-priority nav item; hide it on
+  // small screens so the logo + action buttons don't overflow.
+  @media (max-width: 600px) {
+    display: none;
+  }
 }
 
 // ── Main content ──────────────────────────────────────────────────────────

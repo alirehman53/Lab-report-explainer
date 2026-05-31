@@ -11,7 +11,7 @@ interface BlogPost {
 }
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'
   
   // Read blog posts
   const filePath = path.join(process.cwd(), 'data', 'blogs.json')
@@ -26,7 +26,8 @@ export async function GET() {
     { url: '/privacy', changefreq: 'monthly', priority: '0.5' },
     { url: '/terms', changefreq: 'monthly', priority: '0.5' },
     { url: '/ads', changefreq: 'monthly', priority: '0.5' },
-    { url: '/results', changefreq: 'weekly', priority: '0.8' },
+    // NOTE: /results is intentionally excluded — it renders per-user analysis
+    // from session storage and has no stable, indexable content.
   ]
 
   // Generate sitemap XML

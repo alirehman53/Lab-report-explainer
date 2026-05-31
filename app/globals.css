@@ -1,26 +1,24 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Register the typography plugin. The blog article body uses `prose` classes
+ * (prose, prose-lg, prose-h2:*, etc.) to style the rendered HTML. In Tailwind
+ * v4 plugins must be registered here with @plugin — without this the `prose`
+ * utilities are never generated and blog posts render unstyled (cramped
+ * headings, no spacing, overlapping text).
+ */
+@plugin "@tailwindcss/typography";
+
+/*
+ * Tailwind is used by the content pages (blog, ads, about). The MAIN app
+ * (home + results) uses the SCSS-module design system in styles/. To avoid the
+ * two systems fighting over the <body>, the global body background / font /
+ * color are owned exclusively by styles/globals.scss. We intentionally do NOT
+ * redefine body or a separate dark-mode background here — doing so previously
+ * overrode the design system with Arial + a mismatched background.
+ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
