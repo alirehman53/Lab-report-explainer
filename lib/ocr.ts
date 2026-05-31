@@ -20,8 +20,12 @@ import fs from 'fs/promises'
 import os from 'os'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
-import { ocrWithVision } from './ocrVision'
 import { cleanOcrText } from './ocr-cleaner'
+// NOTE: ./ocrVision (and its ~350 MB @xenova/transformers dependency) is imported
+// LAZILY inside the vision fallback below — never at module top level. Importing
+// it eagerly pulled the whole model runtime into every /api/analyze cold start,
+// which OOMs/crashes the Vercel serverless function (an opaque HTML 500) even for
+// plain-text requests that never touch OCR.
 
 const execFileAsync = promisify(execFile)
 
@@ -161,7 +165,9 @@ export async function ocrBufferMulti(buffer: ArrayBuffer): Promise<string[]> {
   }
 
   // Last resort (local/Node with no Tesseract): AI vision on the upscaled variant.
+  // Imported lazily so @xenova/transformers stays out of the serverless bundle.
   try {
+    const { ocrWithVision } = await import('./ocrVision')
     const v = variants[0]
     const ab = v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength) as ArrayBuffer
     const raw = await ocrWithVision(ab)
