@@ -3,6 +3,7 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from '@/styles/upload.module.scss'
+import { extractTextFromFile } from '@/lib/clientExtract'
 
 type Gender = 'unknown' | 'female' | 'male'
 
@@ -17,6 +18,7 @@ export default function HomePage() {
   const [gender,    setGender]    = useState<Gender>('unknown')
   const [age,       setAge]       = useState('')
   const [loading,   setLoading]   = useState(false)
+  const [progress,  setProgress]  = useState('')
   const [error,     setError]     = useState('')
   const [dragging,  setDragging]  = useState(false)
 
@@ -42,29 +44,14 @@ export default function HomePage() {
     }
     
     try {
-      if (file.type.startsWith('image/')) {
-        // Regular image - set preview and keep for upload
+      // Images and PDFs are kept as-is and processed IN THE BROWSER on submit
+      // (text-layer extraction for digital PDFs, OCR for photos/scans). We no
+      // longer rasterize PDFs or upload binaries — the server only sees text.
+      if (file.type.startsWith('image/') || file.type === 'application/pdf') {
         const url = URL.createObjectURL(file)
         setImagePreview(url)
         setImageFile(file)
-        return
-      }
-
-      if (file.type === 'application/pdf') {
-        // PDF - convert to image in browser before uploading
-        setLoading(true)
-        setError('Converting PDF to image...')
-        try {
-          const imageFile = await convertPdfToImage(file)
-          const url = URL.createObjectURL(imageFile)
-          setImagePreview(url)
-          setImageFile(imageFile)
-          setError('') // Clear conversion message
-        } catch (err: any) {
-          setError(`PDF conversion failed: ${err.message}. Please try uploading page 1 as PNG/JPG instead.`)
-        } finally {
-          setLoading(false)
-        }
+        setError('')
         return
       }
 
@@ -73,48 +60,6 @@ export default function HomePage() {
     } catch {
       setError('Could not read file. Try copying and pasting your values instead.')
     }
-  }
-
-  // Convert PDF to PNG image using PDF.js in the browser
-  async function convertPdfToImage(file: File): Promise<File> {
-    // Dynamically import PDF.js for browser
-    const pdfjsLib = await import('pdfjs-dist')
-    
-    // Use local worker file served from public directory
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-    
-    // Read PDF file
-    const arrayBuffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-    
-    // Render first page
-    const page = await pdf.getPage(1)
-    const scale = 2.0 // High resolution for OCR
-    const viewport = page.getViewport({ scale })
-    
-    // Create canvas
-    const canvas = document.createElement('canvas')
-    canvas.width = viewport.width
-    canvas.height = viewport.height
-    const context = canvas.getContext('2d')!
-    
-    // Render PDF page to canvas
-    await page.render({
-      canvasContext: context,
-      viewport: viewport,
-      canvas: canvas,
-    }).promise
-    
-    // Convert canvas to Blob
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((b) => {
-        if (b) resolve(b)
-        else reject(new Error('Failed to convert canvas to blob'))
-      }, 'image/png')
-    })
-    
-    // Create File from Blob
-    return new File([blob], file.name.replace('.pdf', '.png'), { type: 'image/png' })
   }
 
   function onFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -151,41 +96,40 @@ export default function HomePage() {
     }
 
     setLoading(true)
+    setProgress('')
     try {
-      let res: Response
       const ageNum = age ? parseInt(age, 10) : undefined
-      
-      if (imageFile && !text) {
-        const form = new FormData()
-        form.append('file', imageFile)
-        form.append('gender', gender)
-        if (ageNum) form.append('age', ageNum.toString())
-        res = await fetch('/api/analyze', { method: 'POST', body: form })
-      } else {
-        res = await fetch('/api/analyze', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ rawText: text, gender, age: ageNum }),
-        })
+
+      // Resolve the report text. Typed text wins; otherwise extract it from the
+      // uploaded file in the browser (decimal-safe PDF text layer, or OCR).
+      let reportText = text
+      if (!reportText && imageFile) {
+        try {
+          reportText = (await extractTextFromFile(imageFile, setProgress)).trim()
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Could not read the uploaded file.')
+          return
+        }
+        if (!reportText || reportText.length < 5) {
+          setError(
+            'Could not read any text from that file. If it is a photo, try a clearer, well-lit image, or paste the values as text.'
+          )
+          return
+        }
       }
+
+      setProgress('Analyzing your results…')
+      const res = await fetch('/api/analyze', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ rawText: reportText, gender, age: ageNum }),
+      })
 
       const data = await res.json()
 
       if (!res.ok) {
         setError(data.error || 'Something went wrong. Please try again.')
         return
-      }
-
-      // If server returns the PDF-extraction placeholder, show inline guidance instead of navigating
-      if (Array.isArray(data.results)) {
-        const pdfPlaceholder = data.results.find(
-          (r: any) => r && (r.markerId === 'uploaded-pdf' || r.markerId === 'uploaded-image') && typeof r.findingText === 'string' && r.findingText.includes('Could not extract selectable text')
-        )
-        if (pdfPlaceholder) {
-          setError(pdfPlaceholder.findingText)
-          setLoading(false)
-          return
-        }
       }
 
       if (!data.results || data.results.length === 0) {
@@ -203,6 +147,7 @@ export default function HomePage() {
       setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
+      setProgress('')
     }
   }
 
@@ -433,8 +378,7 @@ export default function HomePage() {
             {loading ? (
               <span className={styles.loadingText}>
                 <span className={styles.spinner} />
-                <span>Analyzing...</span>
-                Analyzing your results…
+                <span>{progress || 'Analyzing your results…'}</span>
               </span>
             ) : (
               'Explain my results →'

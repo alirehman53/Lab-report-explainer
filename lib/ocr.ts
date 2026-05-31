@@ -150,7 +150,17 @@ export async function ocrBufferMulti(buffer: ArrayBuffer): Promise<string[]> {
     console.log('[OCR] Tesseract not available, trying AI vision fallback...')
   }
 
-  // Last resort: AI vision on the upscaled variant only.
+  // On serverless (Vercel/Lambda) we must NOT load the local TrOCR model: it is
+  // ~350 MB fetched at request time and reliably OOMs/times out the function,
+  // crashing it with an opaque 500. Text extraction happens in the browser there
+  // (see lib/clientExtract.ts), so the server should only ever receive text.
+  // Return empty so the caller degrades gracefully (JSON message, never a crash).
+  if (isServerless) {
+    console.warn('[OCR] Serverless runtime — skipping heavy vision model. Upload text or use the web app (browser-side OCR).')
+    return []
+  }
+
+  // Last resort (local/Node with no Tesseract): AI vision on the upscaled variant.
   try {
     const v = variants[0]
     const ab = v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength) as ArrayBuffer
