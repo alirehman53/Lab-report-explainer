@@ -8,7 +8,7 @@ export default function AdsPage() {
     <main className="container mx-auto px-4 py-12 max-w-4xl">
       <h1 className="text-4xl font-bold mb-8">About Our Advertising</h1>
       
-      <div className="prose prose-lg max-w-none">
+      <div className="blog-content max-w-none">
         <h2>Why We Show Ads</h2>
         <p>
           Lab Lens is a free service that helps people understand their medical lab results. To keep 

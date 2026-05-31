@@ -8,7 +8,7 @@ export default function TermsPage() {
     <main className="container mx-auto px-4 py-12 max-w-4xl">
       <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
       
-      <div className="prose prose-lg max-w-none">
+      <div className="blog-content max-w-none">
         <p className="text-gray-600 mb-6">
           <strong>Last updated:</strong> {new Date().toLocaleDateString()}
         </p>
