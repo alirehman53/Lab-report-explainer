@@ -18,6 +18,10 @@ const geistMono = Geist_Mono({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lab-report-explainer-sigma.vercel.app'
 const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+// Bing Webmaster Tools verification → emits <meta name="msvalidate.01" content="...">.
+// Set NEXT_PUBLIC_BING_SITE_VERIFICATION in the environment (or use "Import from
+// Google Search Console" in Bing, which needs no code).
+const BING_SITE_VERIFICATION = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -96,8 +100,13 @@ export const metadata: Metadata = {
   // Only emit a verification meta tag when a real token is configured via env.
   // Emitting a placeholder string produces an invalid tag that can confuse
   // Search Console verification.
-  ...(GOOGLE_SITE_VERIFICATION
-    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+  ...(GOOGLE_SITE_VERIFICATION || BING_SITE_VERIFICATION
+    ? {
+        verification: {
+          ...(GOOGLE_SITE_VERIFICATION ? { google: GOOGLE_SITE_VERIFICATION } : {}),
+          ...(BING_SITE_VERIFICATION ? { other: { 'msvalidate.01': BING_SITE_VERIFICATION } } : {}),
+        },
+      }
     : {}),
   alternates: {
     canonical: '/',
