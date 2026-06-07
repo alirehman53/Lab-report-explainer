@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Script from 'next/script'
 import { getConsent } from './Consent'
 
 interface AdSenseProps {
@@ -19,7 +18,7 @@ export default function AdSense({
 }: AdSenseProps) {
   const [canShowAds, setCanShowAds] = useState(false)
   const [adLoaded, setAdLoaded] = useState(false)
-  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-0000000000000000'
+  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-9229177333655230'
 
   useEffect(() => {
     // Check initial consent
@@ -53,22 +52,16 @@ export default function AdSense({
     return null
   }
 
+  // The adsbygoogle.js loader is included once site-wide in app/layout.tsx, so
+  // we only render the ad unit here (after consent) and push() it above.
   return (
-    <>
-      <Script
-        async
-        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`}
-        crossOrigin="anonymous"
-        strategy="afterInteractive"
-      />
-      <ins
-        className={`adsbygoogle ${className}`}
-        style={{ display: 'block' }}
-        data-ad-client={client}
-        data-ad-slot={slot}
-        data-ad-format={format}
-        data-full-width-responsive={responsive.toString()}
-      />
-    </>
+    <ins
+      className={`adsbygoogle ${className}`}
+      style={{ display: 'block' }}
+      data-ad-client={client}
+      data-ad-slot={slot}
+      data-ad-format={format}
+      data-full-width-responsive={responsive.toString()}
+    />
   )
 }
