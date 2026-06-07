@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { NextResponse } from 'next/server'
+import { markerPageSlugs } from '@/lib/markerPages'
 
 export const runtime = 'nodejs' // Ensure fs is available
 
@@ -12,15 +13,18 @@ interface BlogPost {
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lab-report-explainer-sigma.vercel.app'
-  
+
   // Read blog posts
   const filePath = path.join(process.cwd(), 'data', 'blogs.json')
   const fileContent = fs.readFileSync(filePath, 'utf8')
   const posts: BlogPost[] = JSON.parse(fileContent)
 
+  const markerSlugs = markerPageSlugs()
+
   // Static pages
   const staticPages = [
     { url: '/', changefreq: 'daily', priority: '1.0' },
+    { url: '/marker', changefreq: 'weekly', priority: '0.9' },
     { url: '/blog', changefreq: 'daily', priority: '0.9' },
     { url: '/about', changefreq: 'monthly', priority: '0.7' },
     { url: '/privacy', changefreq: 'monthly', priority: '0.5' },
@@ -47,6 +51,15 @@ ${posts
     (post) => `  <url>
     <loc>${baseUrl}/blog/${post.slug}</loc>
     <lastmod>${post.date}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`
+  )
+  .join('\n')}
+${markerSlugs
+  .map(
+    (slug) => `  <url>
+    <loc>${baseUrl}/marker/${slug}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`

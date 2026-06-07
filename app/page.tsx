@@ -7,6 +7,29 @@ import { extractTextFromFile } from '@/lib/clientExtract'
 
 type Gender = 'unknown' | 'female' | 'male'
 
+const HOMEPAGE_FAQS: { q: string; a: string }[] = [
+  {
+    q: 'What is a lab report explainer?',
+    a: 'A lab report explainer reads the values from your blood test, urine test, or other medical report and explains each one in plain English — what is normal, what is flagged high or low, and what it might mean. Lab Lens does this instantly and free, and suggests questions to ask your doctor.',
+  },
+  {
+    q: 'Is Lab Lens free to use?',
+    a: 'Yes. Uploading and analyzing your lab report is completely free. The service is supported by ads, so there is no signup, subscription, or paywall.',
+  },
+  {
+    q: 'What types of reports can I upload?',
+    a: 'You can paste values as text, or upload a PDF, photo, or scan of almost any report — complete blood count (CBC), liver and kidney panels, thyroid, lipid/cholesterol, diabetes (HbA1c, glucose), urinalysis, hormones, infectious-disease serology and more.',
+  },
+  {
+    q: 'Is my health data private?',
+    a: 'Your report is processed to generate the explanation and is not stored or sold. Text extraction from images and PDFs happens in your own browser, so the file itself does not need to leave your device.',
+  },
+  {
+    q: 'Can it replace my doctor?',
+    a: 'No. Lab Lens is for education only and is not a diagnosis or medical advice. It helps you understand your results and have a more informed conversation with a qualified healthcare professional.',
+  },
+]
+
 export default function HomePage() {
   const router  = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -434,7 +457,50 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Lab test guides link (internal linking + SEO) */}
+        <div style={{ maxWidth: '800px', margin: '8px auto 0', padding: '0 24px', textAlign: 'center' }}>
+          <p style={{ color: 'var(--color-ink-muted)', marginBottom: '8px' }}>
+            Looking up a single result? Browse our plain-English{' '}
+            <a href="/marker" style={{ color: '#059669', fontWeight: 600 }}>lab test guides</a>{' '}
+            for normal ranges and what high or low values mean.
+          </p>
+        </div>
+
+        {/* FAQ — visible + FAQPage structured data for rich results */}
+        <section
+          aria-labelledby="faq-heading"
+          style={{ maxWidth: '800px', margin: '40px auto 24px', padding: '0 24px' }}
+        >
+          <h2 id="faq-heading" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '20px', textAlign: 'center' }}>
+            Frequently asked questions
+          </h2>
+          {HOMEPAGE_FAQS.map((f) => (
+            <details
+              key={f.q}
+              style={{ background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px 20px', marginBottom: '12px' }}
+            >
+              <summary style={{ fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer' }}>{f.q}</summary>
+              <p style={{ color: 'var(--color-ink-muted)', marginTop: '10px', lineHeight: 1.7 }}>{f.a}</p>
+            </details>
+          ))}
+        </section>
+
       </main>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: HOMEPAGE_FAQS.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }),
+        }}
+      />
     </div>
   )
 }

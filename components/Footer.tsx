@@ -50,8 +50,17 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <Link 
-                  href="/blog" 
+                <Link
+                  href="/marker"
+                  className="text-emerald-100/70 hover:text-white transition-all duration-200 text-sm flex items-center group"
+                >
+                  <span className="mr-2 group-hover:scale-125 transform transition-transform">🧪</span>
+                  <span className="group-hover:translate-x-1 transform transition-transform">Lab Test Guides</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/blog"
                   className="text-emerald-100/70 hover:text-white transition-all duration-200 text-sm flex items-center group"
                 >
                   <span className="mr-2 group-hover:scale-125 transform transition-transform">📚</span>
