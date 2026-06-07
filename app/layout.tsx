@@ -16,22 +16,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://lab-report-explainer-sigma.vercel.app'
 const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Lab Lens — AI-Powered Medical Report Analyzer | Instant Lab Results Interpretation",
-    template: '%s | Lab Lens'
+    default: "Lab Report Explainer — AI Blood Test & Medical Report Analyzer | Lab Lens",
+    template: '%s | Lab Report Explainer'
   },
-  description: "Free AI-powered medical report analyzer. Upload your lab results, blood tests, imaging reports, or pathology results for instant expert interpretation in plain English. Understand your health markers with detailed explanations.",
+  description: "Free lab report explainer. Upload your blood test, lab results, imaging, or pathology report and get an instant, plain-English explanation of every value — what's normal, what's flagged, and what to ask your doctor.",
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
     apple: '/apple-touch-icon.png',
   },
   keywords: [
+    'lab report explainer',
+    'lab report analyzer',
+    'blood test explainer',
     'lab results interpreter',
     'blood test analyzer',
     'medical report explainer',
@@ -57,8 +60,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "Lab Lens — AI-Powered Medical Report Analyzer",
-    description: "Upload your lab results for instant AI-powered interpretation. Understand your blood tests, imaging reports, and health markers in plain language.",
+    title: "Lab Report Explainer — AI Blood Test & Medical Report Analyzer",
+    description: "Free lab report explainer. Upload your lab results for an instant, plain-English explanation of your blood tests, imaging reports, and health markers.",
     url: '/',
     siteName: 'Lab Lens',
     type: 'website',
@@ -74,8 +77,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Lab Lens — AI Medical Report Analyzer",
-    description: "Upload lab results for instant AI interpretation. Understand your health markers in plain language.",
+    title: "Lab Report Explainer — AI Medical Report Analyzer",
+    description: "Free lab report explainer. Upload lab results for instant, plain-English interpretation of your health markers.",
     images: ['/og-image.jpg'],
     creator: '@lablens',
   },

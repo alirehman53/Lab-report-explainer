@@ -116,7 +116,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'}/blog/${slug}`
+      '@id': `${process.env.NEXT_PUBLIC_SITE_URL || 'https://lab-report-explainer-sigma.vercel.app'}/blog/${slug}`
     },
     wordCount: wordCount,
     timeRequired: `PT${readTime}M`,

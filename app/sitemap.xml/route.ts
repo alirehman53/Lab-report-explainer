@@ -11,7 +11,7 @@ interface BlogPost {
 }
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lab-report-explainer-sigma.vercel.app'
   
   // Read blog posts
   const filePath = path.join(process.cwd(), 'data', 'blogs.json')

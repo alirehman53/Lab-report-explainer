@@ -8,7 +8,7 @@ import type { MetadataRoute } from 'next'
  * storage — there is nothing stable for a crawler to index there.
  */
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lablens.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lab-report-explainer-sigma.vercel.app'
   return {
     rules: [
       {

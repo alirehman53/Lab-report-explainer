@@ -207,13 +207,14 @@ export default function HomePage() {
 
         {/* Hero */}
         <div className={styles.hero}>
-          <p className={styles.eyebrow}>Medical Report Explainer</p>
+          <p className={styles.eyebrow}>Free Lab Report Explainer</p>
           <h1 className={styles.title}>
-            Your medical reports,<br /><em>clearly explained.</em>
+            Lab report explainer:<br /><em>your results, clearly explained.</em>
           </h1>
           <p className={styles.subtitle}>
-            Paste values or upload any medical test report (blood, urine, imaging, microbiology).
-            We explain findings in plain language, highlight important flags, and suggest questions for your clinician.
+            Paste values or upload any lab or medical test report (blood, urine, imaging, microbiology).
+            Our lab report explainer translates findings into plain language, highlights important flags,
+            and suggests questions for your doctor.
           </p>
         </div>
 
